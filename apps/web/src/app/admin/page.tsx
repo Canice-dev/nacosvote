@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { AdminSidebar } from "@/components/admin-sidebar";
+import { requireAdmin } from "@/lib/admin-session";
 
 export const metadata = { title: "Overview | NACOS Vote" };
 
@@ -122,17 +123,6 @@ function Icon({
   );
 }
 
-const navigation = [
-  ["Overview", "home"],
-  ["Election setup", "election"],
-  ["Voter register", "users"],
-  ["Positions & candidates", "candidates"],
-  ["Schedule & controls", "calendar"],
-  ["Results", "results"],
-  ["Audit log", "audit"],
-  ["Admin accounts", "account"],
-] as const;
-
 const activities = [
   [
     "Voter register imported",
@@ -155,72 +145,22 @@ const activities = [
   ["Admin account created", "Observer role assigned", "Yesterday", "account"],
 ] as const;
 
-export default function AdminDashboardPage() {
+export default async function AdminDashboardPage() {
+  const admin = await requireAdmin();
+
+  const initials = admin.username.slice(0, 2).toUpperCase();
+
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-[#282a2a]">
-      <aside className="fixed inset-y-0 left-0 hidden w-67 border-r border-[#e6e6e3] bg-[#f8f8f7] px-5 py-6 lg:flex lg:flex-col">
-        <Link href="/admin" className="flex items-center gap-3 px-2">
-          <span className="grid size-8 place-items-center rounded-md bg-[#0f5a50] text-xs font-bold text-white">
-            NV
-          </span>
-          <span className="font-semibold tracking-[-0.02em] text-[#1e2f2d]">
-            NACOS Vote
-          </span>
-        </Link>
-
-        <div className="mt-9 rounded-lg border border-[#e1e2de] bg-white px-3 py-2.5">
-          <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-[#8a908d]">
-            Workspace
-          </p>
-          <div className="mt-1 flex items-center justify-between gap-2 text-sm font-medium text-[#303634]">
-            Computer Science
-            <Icon name="chevron" className="size-4 text-[#7d8581]" />
-          </div>
-        </div>
-
-        <nav className="mt-7 space-y-1" aria-label="Admin navigation">
-          {navigation.map(([label, icon]) => {
-            const active = label === "Overview";
-            return (
-              <a
-                key={label}
-                href="#"
-                className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition ${active ? "bg-[#e9f1ee] font-semibold text-[#164e46]" : "text-[#656c68] hover:bg-[#eeeeeb] hover:text-[#303634]"}`}
-              >
-                <Icon name={icon} className="size-4.5" />
-                {label}
-              </a>
-            );
-          })}
-        </nav>
-
-        <div className="mt-auto border-t border-[#e3e4e0] pt-5">
-          <a
-            href="#"
-            className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-[#656c68] hover:bg-[#eeeeeb]"
-          >
-            <Icon name="shield" className="size-4.5" /> Help & security
-          </a>
-          <button className="mt-3 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-[#eeeeeb]">
-            <span className="grid size-8 place-items-center rounded-full bg-[#d9e7e2] text-xs font-semibold text-[#1c554c]">
-              SA
-            </span>
-            <span className="min-w-0">
-              <span className="block truncate text-sm font-medium text-[#333936]">
-                Super Admin
-              </span>
-              <span className="block truncate text-xs text-[#858b87]">
-                Administrator
-              </span>
-            </span>
-            <Icon name="chevron" className="ml-auto size-4 text-[#7d8581]" />
-          </button>
-        </div>
-      </aside>
+      <AdminSidebar
+        username={admin.username}
+        email={admin.email}
+        initials={initials}
+      />
 
       <div className="lg:pl-67">
         <header className="flex h-18.25 items-center justify-between border-b border-[#e6e6e3] bg-white px-5 sm:px-8 lg:px-12">
-          <div className="flex items-center gap-3 lg:hidden">
+          <div className="flex items-center gap-3 pl-12 lg:hidden">
             <span className="grid size-8 place-items-center rounded-md bg-[#0f5a50] text-xs font-bold text-white">
               NV
             </span>
@@ -230,30 +170,14 @@ export default function AdminDashboardPage() {
             Computer Science Department{" "}
             <span className="mx-2 text-[#c3c7c4]">/</span> Election management
           </p>
-          <div className="flex items-center gap-4">
-            <span className="hidden text-xs text-[#737b76] sm:inline">
-              Africa/Lagos (WAT)
-            </span>
-            <button
-              aria-label="Notifications"
-              className="text-[#69716c] hover:text-[#174f47]"
-            >
-              <Icon name="bell" className="size-5" />
-            </button>
-            <span className="hidden size-8 rounded-full bg-[#d9e7e2] sm:block" />
-          </div>
         </header>
 
         <div className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">
-          <div className="flex flex-col justify-between gap-5 border-b border-[#e5e6e2] pb-7 sm:flex-row sm:items-end">
+          <div className="flex flex-col justify-between gap-5 pb-7 sm:flex-row sm:items-end">
             <div>
-              <p className="text-sm font-medium text-[#707773]">Overview</p>
               <h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-[#292d2b] sm:text-[34px]">
-                NACOS Departmental Election
+                Hello, {admin.username}
               </h1>
-              <p className="mt-2 text-sm text-[#727975]">
-                Computer Science Department · 2026
-              </p>
             </div>
             <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#e7f4ed] px-3 py-1.5 text-xs font-semibold text-[#177052]">
               <span className="size-1.5 rounded-full bg-[#15925f]" /> Election
