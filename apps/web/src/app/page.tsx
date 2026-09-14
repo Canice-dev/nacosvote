@@ -1,69 +1,58 @@
-import Image from "next/image";
+import Link from "next/link";
+
+import { StudentLoginForm } from "@/components/student-login-form";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
+    <main className="min-h-screen bg-[#f7f8f5] px-5 py-6 text-[#1b2b2a] sm:px-8 sm:py-8">
+      <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col">
+        <header className="flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-3" aria-label="NACOS Vote home">
+            <span className="grid size-10 place-items-center rounded-xl bg-[#0e5a4f] text-sm font-bold tracking-tight text-white">NV</span>
+            <span className="text-sm font-semibold tracking-tight sm:text-base">NACOS Vote</span>
+          </Link>
+          <Link href="/admin/login" className="text-sm font-medium text-[#315954] underline-offset-4 hover:text-[#0e5a4f] hover:underline">
+            Admin sign in
+          </Link>
+        </header>
+
+        <section className="grid flex-1 items-center gap-12 py-12 lg:grid-cols-[1.1fr_.9fr] lg:gap-20 lg:py-16">
+          <div className="max-w-xl">
+            <p className="mb-5 inline-flex rounded-full border border-[#b9d6cc] bg-[#edf8f3] px-3 py-1 text-xs font-semibold tracking-wide text-[#176353]">
+              DEPARTMENTAL ELECTION PORTAL
+            </p>
+            <h1 className="max-w-lg text-4xl font-semibold leading-[1.08] tracking-[-0.045em] text-[#17312f] sm:text-5xl lg:text-6xl">
+              Your voice belongs in this election.
+            </h1>
+            <p className="mt-6 max-w-md text-base leading-7 text-[#52706b] sm:text-lg">
+              Sign in securely with your matric number to receive a one-time verification code at your registered school email.
+            </p>
+
+            <div className="mt-10 grid gap-4 sm:grid-cols-3">
+              {[
+                ["01", "Verify", "Use your matric number"],
+                ["02", "Vote", "Review every selection"],
+                ["03", "Confirm", "Receive your receipt"],
+              ].map(([number, title, description]) => (
+                <div key={number} className="border-l border-[#cfe0d9] pl-3">
+                  <p className="text-xs font-bold tracking-widest text-[#2f8572]">{number}</p>
+                  <p className="mt-2 text-sm font-semibold text-[#244440]">{title}</p>
+                  <p className="mt-1 text-xs leading-5 text-[#66817b]">{description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <StudentLoginForm />
+        </section>
+
+        <footer className="flex flex-col gap-2 border-t border-[#d9e5df] pt-5 text-xs text-[#66817b] sm:flex-row sm:items-center sm:justify-between">
+          <p>Your ballot is private. Your vote cannot be linked to your identity.</p>
+          <a href="mailto:elections@nacos.edu.ng" className="font-medium text-[#315954] hover:text-[#0e5a4f] hover:underline">
+            Need help? Contact election support
           </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+        </footer>
+      </div>
+    </main>
   );
 }
