@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "seed:students": "node --env-file=.env scripts/seed-students.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
