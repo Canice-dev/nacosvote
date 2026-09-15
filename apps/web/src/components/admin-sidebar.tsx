@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import logoMark from "@/assets/logo-mark.png";
 
 const navigation = [
   ["Overview", "home", "/admin"],
@@ -107,10 +109,12 @@ function SidebarContent({
         className="flex items-center gap-3 px-2"
         onClick={onNavigate}
       >
-        <span className="grid size-8 place-items-center rounded-md bg-[#0f5a50] text-xs font-bold text-white">
-          NV
-        </span>
-        <span className="font-semibold tracking-[-0.02em] text-[#1e2f2d]">
+        <Image
+          src={logoMark}
+          alt=""
+          className="size-10 rounded-xl object-contain"
+        />
+        <span className="text-sm font-semibold tracking-tight sm:text-base">
           NACOS Vote
         </span>
       </Link>

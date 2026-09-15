@@ -1,4 +1,5 @@
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { SiteHeader } from "@/components/site-header";
 import { requireAdmin } from "@/lib/admin-session";
 
 type AdminSectionPageProps = {
@@ -23,12 +24,7 @@ export async function AdminSectionPage({
     <main className="min-h-screen bg-[#fbfbfa] text-[#282a2a]">
       <AdminSidebar {...admin} initials={initials} />
       <div className="lg:pl-67">
-        <header className="flex h-18.25 items-center border-b border-[#e6e6e3] bg-white px-5 sm:px-8 lg:px-12">
-          <p className="pl-12 text-sm text-[#717773] lg:pl-0">
-            Computer Science Department{" "}
-            <span className="mx-2 text-[#c3c7c4]">/</span> Election management
-          </p>
-        </header>
+        <SiteHeader className="h-18.25 border-b border-[#e6e6e3] bg-white px-5 pl-17 sm:px-8 lg:px-12" />
         <section className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">
           <div className="flex flex-col justify-between gap-5 border-b border-[#e5e6e2] pb-7 sm:flex-row sm:items-end">
             <div>

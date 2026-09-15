@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { SiteHeader } from "@/components/site-header";
 
 export const metadata = {
   title: "Your Ballot | NACOS Vote",
@@ -8,12 +8,7 @@ export default function BallotPage() {
   return (
     <main className="min-h-screen bg-[#f7f8f5] px-5 py-6 text-[#1b2b2a] sm:px-8 sm:py-8">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-3xl flex-col">
-        <header>
-          <Link href="/" className="flex w-fit items-center gap-3" aria-label="NACOS Vote home">
-            <span className="grid size-10 place-items-center rounded-xl bg-[#0e5a4f] text-sm font-bold tracking-tight text-white">NV</span>
-            <span className="text-sm font-semibold tracking-tight sm:text-base">NACOS Vote</span>
-          </Link>
-        </header>
+        <SiteHeader />
 
         <section className="flex flex-1 items-center justify-center py-12">
           <div className="w-full rounded-3xl border border-[#d9e5df] bg-white p-7 shadow-[0_24px_60px_-35px_rgba(20,73,62,0.45)] sm:p-10">

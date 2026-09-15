@@ -1,4 +1,10 @@
+import { eq } from "drizzle-orm";
+
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { ElectionCountdown } from "@/components/election-countdown";
+import { SiteHeader } from "@/components/site-header";
+import { db } from "@/db";
+import { elections } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-session";
 
 export const metadata = { title: "Overview | NACOS Vote" };
@@ -147,6 +153,11 @@ const activities = [
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
+  const [openElection] = await db
+    .select({ endsAt: elections.endsAt, timezone: elections.timezone })
+    .from(elections)
+    .where(eq(elections.state, "open"))
+    .limit(1);
 
   const initials = admin.username.slice(0, 2).toUpperCase();
 
@@ -159,18 +170,7 @@ export default async function AdminDashboardPage() {
       />
 
       <div className="lg:pl-67">
-        <header className="flex h-18.25 items-center justify-between border-b border-[#e6e6e3] bg-white px-5 sm:px-8 lg:px-12">
-          <div className="flex items-center gap-3 pl-12 lg:hidden">
-            <span className="grid size-8 place-items-center rounded-md bg-[#0f5a50] text-xs font-bold text-white">
-              NV
-            </span>
-            <span className="text-sm font-semibold">NACOS Vote</span>
-          </div>
-          <p className="hidden text-sm text-[#717773] lg:block">
-            Computer Science Department{" "}
-            <span className="mx-2 text-[#c3c7c4]">/</span> Election management
-          </p>
-        </header>
+        <SiteHeader className="h-18.25 border-b border-[#e6e6e3] bg-white px-5 pl-17 sm:px-8 lg:px-12" />
 
         <div className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">
           <div className="flex flex-col justify-between gap-5 pb-7 sm:flex-row sm:items-end">
@@ -195,12 +195,18 @@ export default async function AdminDashboardPage() {
                   <p className="text-sm font-medium text-[#3c625c]">
                     Election closes in
                   </p>
-                  <p className="mt-1 font-mono text-3xl font-semibold tracking-[-0.06em] text-[#174d45] sm:text-4xl">
-                    02:14:37
-                  </p>
-                  <p className="mt-2 text-xs text-[#59746e]">
-                    Sunday, 14 September 2026 · 5:00 PM WAT
-                  </p>
+                  {openElection ? (
+                    <ElectionCountdown {...openElection} />
+                  ) : (
+                    <>
+                      <p className="mt-1 font-mono text-3xl font-semibold tracking-[-0.06em] text-[#174d45] sm:text-4xl">
+                        --:--:--
+                      </p>
+                      <p className="mt-2 text-xs text-[#59746e]">
+                        No open election
+                      </p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
