@@ -7,16 +7,21 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { admins, adminSessions } from "@/db/schema";
 
-export async function requireAdmin() {
+export async function getAdminSession() {
   const sessionToken = (await cookies()).get("admin_session")?.value;
 
   if (!sessionToken) {
-    redirect("/admin/login");
+    return null;
   }
 
   const tokenHash = createHash("sha256").update(sessionToken).digest("hex");
   const [admin] = await db
-    .select({ username: admins.username, email: admins.email })
+    .select({
+      id: admins.id,
+      username: admins.username,
+      email: admins.email,
+      role: admins.role,
+    })
     .from(adminSessions)
     .innerJoin(admins, eq(adminSessions.adminId, admins.id))
     .where(
@@ -28,6 +33,12 @@ export async function requireAdmin() {
       ),
     )
     .limit(1);
+
+  return admin ?? null;
+}
+
+export async function requireAdmin() {
+  const admin = await getAdminSession();
 
   if (!admin) {
     redirect("/admin/login");
