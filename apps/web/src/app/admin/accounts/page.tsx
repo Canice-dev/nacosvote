@@ -1,13 +1,14 @@
-import { AdminSectionPage } from "@/components/admin-section-page";
+import { desc } from "drizzle-orm";
 
-export default function AccountsPage() {
+import { AdminAccountManager } from "@/components/admin-account-manager";
+import { db } from "@/db";
+import { admins } from "@/db/schema";
+import { requireAdmin } from "@/lib/admin-session";
+
+export default async function AccountsPage() {
+  const admin = await requireAdmin();
+  const accounts = await db.select({ id: admins.id, username: admins.username, email: admins.email, role: admins.role, isActive: admins.isActive, createdAt: admins.createdAt }).from(admins).orderBy(desc(admins.createdAt));
   return (
-    <AdminSectionPage
-      eyebrow="Admin accounts"
-      title="Administrator accounts"
-      description="Manage access for election administrators and observers."
-      action="Add administrator"
-      emptyMessage="No additional administrator accounts exist."
-    />
+    <AdminAccountManager initialAccounts={accounts} admin={{ username: admin.username, email: admin.email, role: admin.role, initials: admin.username.slice(0, 2).toUpperCase() }} />
   );
 }
