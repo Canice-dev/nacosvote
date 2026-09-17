@@ -6,7 +6,6 @@ export default function Home() {
     <main className="min-h-screen bg-[#f7f8f5] px-5 py-6 text-[#1b2b2a] sm:px-8 sm:py-8">
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] max-w-6xl flex-col">
         <SiteHeader />
-
         <section className="grid flex-1 items-center gap-12 py-12 lg:grid-cols-[1.1fr_.9fr] lg:gap-20 lg:py-16">
           <div className="max-w-xl">
             <h1 className="max-w-lg text-4xl font-semibold leading-[1.08] tracking-[-0.045em] text-[#17312f] sm:text-5xl lg:text-6xl">

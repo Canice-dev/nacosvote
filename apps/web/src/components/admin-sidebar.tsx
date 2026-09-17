@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import logoMark from "@/assets/logo-mark.png";
+import logoMark from "@/assets/logo-mark-2.png";
 
 const navigation = [
   ["Overview", "home", "/admin"],
@@ -115,7 +115,7 @@ function SidebarContent({
           className="size-10 rounded-xl object-contain"
         />
         <span className="text-sm font-semibold tracking-tight sm:text-base">
-          NACOS Vote
+          NACOSVote
         </span>
       </Link>
       <nav className="mt-7 space-y-1" aria-label="Admin navigation">
@@ -173,9 +173,9 @@ export function AdminSidebar(props: AdminSidebarProps) {
         aria-label="Open navigation menu"
         aria-expanded={isOpen}
         onClick={() => setIsOpen(true)}
-        className="fixed left-4 top-4 z-30 grid size-10 place-items-center rounded-lg border border-[#dce3df] bg-white text-[#174f47] shadow-sm lg:hidden"
+        className="fixed left-4 top-4 z-60 grid size-10 place-items-center rounded-lg bg-white text-[#174f47]  lg:hidden"
       >
-        <Icon name="menu" className="size-5" />
+        <Icon name="menu" className="size-10" />
       </button>
       {isOpen && (
         <button
@@ -186,7 +186,7 @@ export function AdminSidebar(props: AdminSidebarProps) {
         />
       )}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-[#e6e6e3] bg-[#f8f8f7] px-5 py-6 shadow-xl transition-transform duration-200 lg:w-67 lg:translate-x-0 lg:shadow-none ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={`fixed inset-y-0 left-0 z-60 flex w-72 flex-col border-r border-[#e6e6e3] bg-[#f8f8f7] px-5 py-6 shadow-xl transition-transform duration-200 lg:w-67 lg:translate-x-0 lg:shadow-none ${isOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
         <button
           type="button"

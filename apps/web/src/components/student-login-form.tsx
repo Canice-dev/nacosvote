@@ -85,19 +85,13 @@ export function StudentLoginForm() {
     <section className="w-full max-w-md justify-self-end rounded-3xl border border-[#d9e5df] bg-white p-6 shadow-[0_24px_60px_-35px_rgba(20,73,62,0.45)] sm:p-8">
       <div className="mb-8 flex items-start justify-between gap-5">
         <div>
-          <p className="text-sm font-semibold text-[#176353]">
+          <p className="text-sm font-semibold text-[#17312f]">
             Student sign in
           </p>
           <h2 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[#17312f]">
             {step === "matric" ? "Let’s verify you" : "Enter your code"}
           </h2>
         </div>
-        <span
-          className="grid size-10 shrink-0 place-items-center rounded-full bg-[#edf8f3] text-[#176353]"
-          aria-hidden="true"
-        >
-          →
-        </span>
       </div>
 
       {step === "matric" ? (
