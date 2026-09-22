@@ -81,7 +81,6 @@ export async function POST(request: Request) {
           eq(studentEligibility.electionId, election.id),
           eq(studentEligibility.matricNumber, matricNumber),
           eq(studentEligibility.status, "eligible"),
-          isNull(studentEligibility.votedAt),
         ),
       )
       .limit(1);

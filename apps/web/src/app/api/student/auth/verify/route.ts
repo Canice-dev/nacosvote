@@ -78,6 +78,7 @@ export async function POST(request: Request) {
         otpHash: otpChallenges.otpHash,
         failedAttempts: otpChallenges.failedAttempts,
         eligibilityId: studentEligibility.id,
+        votedAt: studentEligibility.votedAt,
       })
       .from(otpChallenges)
       .innerJoin(
@@ -89,7 +90,6 @@ export async function POST(request: Request) {
           eq(studentEligibility.electionId, election.id),
           eq(studentEligibility.matricNumber, matricNumber),
           eq(studentEligibility.status, "eligible"),
-          isNull(studentEligibility.votedAt),
           isNull(otpChallenges.consumedAt),
           gt(otpChallenges.expiresAt, now),
         ),
@@ -146,7 +146,11 @@ export async function POST(request: Request) {
       return Response.json({ message: INVALID_CODE_MESSAGE }, { status: 401 });
     }
 
-    const response = NextResponse.json({ nextPath: "/student/ballot" });
+    const alreadyVoted = challenge.votedAt !== null;
+    const response = NextResponse.json({
+      alreadyVoted,
+      nextPath: alreadyVoted ? "/student/receipt" : "/student/ballot",
+    });
     response.cookies.set("student_session", token, {
       httpOnly: true,
       sameSite: "strict",
