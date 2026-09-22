@@ -112,9 +112,7 @@ export default function SignIn() {
         router.replace("/student/receipt");
         return;
       }
-      setMessage(
-        "Your identity has been verified. Your ballot will be available here soon.",
-      );
+      router.replace("/(tabs)");
     } catch (error) {
       setMessage(
         error instanceof Error && error.message === "API_NOT_CONFIGURED"
