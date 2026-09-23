@@ -112,7 +112,7 @@ export default function SignIn() {
         router.replace("/student/receipt");
         return;
       }
-      router.replace("/(tabs)/index");
+      router.replace("/(tabs)");
     } catch (error) {
       setMessage(
         error instanceof Error && error.message === "API_NOT_CONFIGURED"

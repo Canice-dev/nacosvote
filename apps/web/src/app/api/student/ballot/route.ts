@@ -36,6 +36,9 @@ export async function GET(request: NextRequest) {
       .select({
         electionId: elections.id,
         title: elections.title,
+        departmentName: elections.departmentName,
+        timezone: elections.timezone,
+        startsAt: elections.startsAt,
         endsAt: elections.endsAt,
       })
       .from(voterSessions)
@@ -110,7 +113,13 @@ export async function GET(request: NextRequest) {
     }
 
     return Response.json({
-      election: { title: session.title, endsAt: session.endsAt },
+      election: {
+        title: session.title,
+        departmentName: session.departmentName,
+        timezone: session.timezone,
+        startsAt: session.startsAt,
+        endsAt: session.endsAt,
+      },
       positions: [...ballot.values()],
     });
   } catch (error) {
