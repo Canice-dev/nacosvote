@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { Trash, TriangleAlert } from "lucide-react";
 
 type ElectionState = "draft" | "scheduled" | "open" | "closed" | "published";
 type Election = {
@@ -29,41 +30,6 @@ const stateStyles: Record<ElectionState, string> = {
   closed: "bg-[#f6ece8] text-[#8b4b34]",
   published: "bg-[#f0eafa] text-[#6c438d]",
 };
-
-function TrashIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M4 7h16M10 11v6m4-6v6M9 7l1-3h4l1 3m-9 0 1 13h10l1-13" />
-    </svg>
-  );
-}
-
-function WarningIcon({ className = "" }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M10.3 3.8 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z" />
-      <path d="M12 9v4m0 4h.01" />
-    </svg>
-  );
-}
 
 export function ElectionManager({
   initialElections,
@@ -165,7 +131,7 @@ export function ElectionManager({
             <button
               type="button"
               onClick={() => setIsDialogOpen(true)}
-              className="w-fit rounded-md bg-[#0f5a50] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0b493f]"
+              className="w-fit rounded-xl bg-[#0f5a50] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0b493f]"
             >
               Create election
             </button>
@@ -190,13 +156,13 @@ export function ElectionManager({
               </p>
             </div>
           ) : (
-            <div className="mt-7 overflow-hidden rounded-lg border border-[#e1e6e2] bg-white">
+            <div className="mt-7 ">
               <div className="px-5 py-4">
                 <h2 className="text-base font-semibold text-[#34403b]">
                   Election list
                 </h2>
               </div>
-              <ul className="divide-y divide-[#edf0ed]">
+              <ul className="divide-y divide-[#edf0ed] overflow-hidden rounded-2xl bg-white">
                 {elections.map((election) => (
                   <li key={election.id} className="p-5">
                     <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-center">
@@ -257,10 +223,10 @@ export function ElectionManager({
                             updatingId === election.id ||
                             deletingId === election.id
                           }
-                          className="rounded-md border border-[#e3b8ad] px-3 py-2 text-sm font-semibold text-[#a33f2c] transition hover:bg-[#fff3f0] disabled:cursor-not-allowed disabled:opacity-50"
+                          className="rounded-xl border border-[#EF4444] px-3 py-2 text-sm font-semibold text-[#EF4444] transition hover:bg-[#fff3f0] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <span className="inline-flex items-center gap-1.5">
-                            <TrashIcon className="size-4" />
+                            <Trash className="size-4" />
                             {deletingId === election.id
                               ? "Deleting..."
                               : "Delete"}
@@ -328,8 +294,8 @@ function DeleteElectionDialog({
         aria-labelledby="delete-election-title"
         className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
       >
-        <span className="grid size-11 place-items-center rounded-full bg-[#fbeae6] text-[#ad422e]">
-          <WarningIcon className="size-5" />
+        <span className="grid size-11 place-items-center rounded-full bg-[#fbeae6] text-[#EF4444]">
+          <TriangleAlert className="size-5" />
         </span>
         <h2
           id="delete-election-title"
@@ -350,7 +316,7 @@ function DeleteElectionDialog({
             type="button"
             onClick={onClose}
             disabled={isDeleting}
-            className="rounded-md border border-[#cfd8d3] px-4 py-2.5 text-sm font-semibold text-[#44504a] hover:bg-[#f5f7f5] disabled:opacity-50"
+            className="rounded-xl border border-[#cfd8d3] px-4 py-2.5 text-sm font-semibold text-[#44504a] hover:bg-[#f5f7f5] disabled:opacity-50"
           >
             Cancel
           </button>
@@ -358,10 +324,10 @@ function DeleteElectionDialog({
             type="button"
             onClick={onConfirm}
             disabled={isDeleting}
-            className="rounded-md bg-[#b3422e] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#913222] disabled:cursor-not-allowed disabled:bg-[#d39b91]"
+            className="rounded-xl bg-[#EF4444] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#913222] disabled:cursor-not-allowed disabled:bg-[#d39b91]"
           >
             <span className="inline-flex items-center gap-1.5">
-              <TrashIcon className="size-4" />
+              <Trash className="size-4" />
               {isDeleting ? "Deleting..." : "Delete election"}
             </span>
           </button>

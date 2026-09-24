@@ -185,7 +185,7 @@ export default async function AdminDashboardPage() {
           </div>
 
           <section className="mt-7 grid gap-4 lg:grid-cols-[1.1fr_.9fr]">
-            <div className="border border-[#dde5e1] bg-[#f2faf6] p-5 sm:p-6">
+            <div className="bg-[#f2faf6] p-5 sm:p-6 rounded-3xl">
               <div className="flex items-start gap-4">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white text-[#16705c]">
                   <Icon name="clock" className="size-5" />
@@ -209,7 +209,7 @@ export default async function AdminDashboardPage() {
                 </div>
               </div>
             </div>
-            <div className="border border-[#e3e5e1] bg-white p-5 sm:p-6">
+            <div className="bg-white p-5 sm:p-6 rounded-3xl">
               <div className="flex items-start gap-4">
                 <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#f6f6f4] text-[#53605b]">
                   <Icon name="lock" className="size-5" />
@@ -227,7 +227,7 @@ export default async function AdminDashboardPage() {
             </div>
           </section>
 
-          <section className="mt-7 grid grid-cols-2 border border-[#e1e3df] bg-white md:grid-cols-4">
+          <section className="mt-7 grid grid-cols-2 bg-white md:grid-cols-4 rounded-3xl">
             {[
               ["Eligible students", "4,892", "Registered to vote"],
               ["Verified today", "1,248", "Completed email OTP"],

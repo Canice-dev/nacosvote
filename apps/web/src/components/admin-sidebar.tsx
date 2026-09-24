@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   BarChart3,
   CalendarDays,
@@ -10,6 +10,7 @@ import {
   CircleQuestionMark,
   ClipboardList,
   LayoutGrid,
+  LogOut,
   Menu,
   PanelLeft,
   PanelRight,
@@ -20,7 +21,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import logoMark from "@/assets/logo-mark-2.png";
 
 const navigation: ReadonlyArray<{
@@ -64,6 +65,38 @@ function SidebarContent({
   onToggle?: () => void;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  useEffect(() => {
+    function closeAccountMenu(event: MouseEvent) {
+      if (!accountMenuRef.current?.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false);
+      }
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsAccountMenuOpen(false);
+    }
+    document.addEventListener("mousedown", closeAccountMenu);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeAccountMenu);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+
+  async function logOut() {
+    setIsLoggingOut(true);
+    try {
+      await fetch("/api/admin/auth/logout", { method: "POST" });
+    } finally {
+      router.replace("/");
+      router.refresh();
+    }
+  }
+
   return (
     <>
       <div
@@ -166,30 +199,70 @@ function SidebarContent({
           {!collapsed && "Help & Support"}
         </a>
         <div
-          className={`mt-3 flex items-center rounded-lg py-2 ${collapsed ? "justify-center" : "gap-3 px-3"}`}
+          className={`mt-3 flex items-center rounded-lg py-2 hover:bg-[#eeeeeb] ${collapsed ? "justify-center" : "gap-3 px-3"}`}
           title={collapsed ? username : undefined}
         >
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#e84e3c] text-xs font-medium text-white">
             {initials}
           </span>
           {!collapsed && (
-            <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
-              <span className="min-w-0">
-                <span className="block truncate text-sm font-medium text-[#333936]">
-                  {username}
+            <div ref={accountMenuRef} className="relative min-w-0 flex-1">
+              <button
+                type="button"
+                aria-expanded={isAccountMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => setIsAccountMenuOpen((open) => !open)}
+                className="flex w-full min-w-0 items-center justify-between gap-2 rounded-md text-left  outline-none focus-visible:ring-2 focus-visible:ring-[#176356]"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium text-[#333936]">
+                    {username}
+                  </span>
+                  <span className="block truncate text-xs text-[#858b87]">
+                    {email}
+                  </span>
                 </span>
-                <span className="block truncate text-xs text-[#858b87]">
-                  {email}
+                <span className="flex shrink-0 items-center justify-center">
+                  <ChevronsUpDown
+                    className={`size-4.5 shrink-0 transition-transform ${isAccountMenuOpen ? "rotate-180" : ""}`}
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
                 </span>
-              </span>
-              <span className="flex shrink-0 items-center justify-center">
-                <ChevronsUpDown
-                  className="size-4.5 shrink-0"
-                  strokeWidth={1.8}
-                  aria-hidden="true"
-                />
-              </span>
-            </span>
+              </button>
+              {isAccountMenuOpen && (
+                <div
+                  role="menu"
+                  aria-label="Account options"
+                  className="absolute bottom-[calc(100%+0.75rem)] -left-16.75 z-70 w-62.5 rounded-2xl border border-[#dde3df] bg-white p-1.5"
+                >
+                  <div className="px-3 py-2.5 flex items-center gap-2">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#e84e3c] text-xs font-medium text-white">
+                      {initials}
+                    </span>
+                    <span>
+                      <p className="truncate text-sm font-semibold text-[#303634]">
+                        {username}
+                      </p>
+                      <p className="mt-0.5 truncate text-xs text-[#7d8580]">
+                        {email}
+                      </p>
+                    </span>
+                  </div>
+                  <div className="my-1 border-t border-[#e8ebe8]" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={isLoggingOut}
+                    onClick={logOut}
+                    className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-[#bd3f31] transition hover:bg-[#fff1ee] disabled:cursor-wait disabled:opacity-70"
+                  >
+                    <LogOut className="size-4" aria-hidden="true" />
+                    {isLoggingOut ? "Logging out…" : "Log out"}
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
