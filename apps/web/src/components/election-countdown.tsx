@@ -39,10 +39,14 @@ function formatEndDate(endsAt: Date, timezone: string) {
 }
 
 export function ElectionCountdown({ endsAt, timezone }: ElectionCountdownProps) {
-  const [remainingTime, setRemainingTime] = useState(() => getRemainingTime(endsAt));
+  // The server and browser may render on opposite sides of a one-second
+  // boundary. Start with a fixed value so hydration always matches, then
+  // calculate the live countdown once the component has mounted.
+  const [remainingTime, setRemainingTime] = useState("--:--:--");
 
   useEffect(() => {
     const updateRemainingTime = () => setRemainingTime(getRemainingTime(endsAt));
+    updateRemainingTime();
     const interval = window.setInterval(updateRemainingTime, 1_000);
 
     return () => window.clearInterval(interval);

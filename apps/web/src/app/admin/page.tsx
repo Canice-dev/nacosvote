@@ -2,7 +2,6 @@ import { eq } from "drizzle-orm";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { ElectionCountdown } from "@/components/election-countdown";
-import { SiteHeader } from "@/components/site-header";
 import { db } from "@/db";
 import { elections } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-session";
@@ -169,8 +168,8 @@ export default async function AdminDashboardPage() {
         initials={initials}
       />
 
-      <div className="lg:pl-67">
-        <SiteHeader className="h-18.25 border-b border-[#e6e6e3] bg-white px-5 pl-17 sm:px-8 lg:px-12" />
+      <div className="lg:pl-(--admin-sidebar-width) transition-[padding] duration-200">
+        {/* <SiteHeader className="h-18.25 border-b border-[#e6e6e3] bg-white px-5 pl-17 sm:px-8 lg:px-12" /> */}
 
         <div className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">
           <div className="flex flex-col justify-between gap-5 pb-7 sm:flex-row sm:items-end">

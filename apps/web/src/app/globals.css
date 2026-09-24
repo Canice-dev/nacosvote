@@ -3,6 +3,11 @@
 :root {
   --background: #f7f8f5;
   --foreground: #1b2b2a;
+  --admin-sidebar-width: 16.75rem;
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  :root { --admin-sidebar-width: 4.5rem !important; }
 }
 
 @theme inline {

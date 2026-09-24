@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
-import { SiteHeader } from "@/components/site-header";
 
 type ElectionState = "draft" | "scheduled" | "open" | "closed" | "published";
 type Election = {
@@ -33,7 +32,16 @@ const stateStyles: Record<ElectionState, string> = {
 
 function TrashIcon({ className = "" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M4 7h16M10 11v6m4-6v6M9 7l1-3h4l1 3m-9 0 1 13h10l1-13" />
     </svg>
   );
@@ -41,7 +49,16 @@ function TrashIcon({ className = "" }: { className?: string }) {
 
 function WarningIcon({ className = "" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M10.3 3.8 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z" />
       <path d="M12 9v4m0 4h.01" />
     </svg>
@@ -60,7 +77,9 @@ export function ElectionManager({
   const [notice, setNotice] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [electionToDelete, setElectionToDelete] = useState<Election | null>(null);
+  const [electionToDelete, setElectionToDelete] = useState<Election | null>(
+    null,
+  );
 
   async function updateState(id: string, state: ElectionState) {
     setUpdatingId(id);
@@ -100,17 +119,26 @@ export function ElectionManager({
     setDeletingId(election.id);
     setNotice("");
     try {
-      const response = await fetch(`/api/admin/elections/${election.id}`, { method: "DELETE" });
-      const result = (await response.json()) as { message?: string; deletedId?: string };
+      const response = await fetch(`/api/admin/elections/${election.id}`, {
+        method: "DELETE",
+      });
+      const result = (await response.json()) as {
+        message?: string;
+        deletedId?: string;
+      };
       if (!response.ok || !result.deletedId) {
         setNotice(result.message ?? "Unable to delete the election.");
         return;
       }
-      setElections((current) => current.filter((item) => item.id !== election.id));
+      setElections((current) =>
+        current.filter((item) => item.id !== election.id),
+      );
       setElectionToDelete(null);
       setNotice(`${election.title} was deleted.`);
     } catch {
-      setNotice("Unable to delete the election. Check your connection and try again.");
+      setNotice(
+        "Unable to delete the election. Check your connection and try again.",
+      );
     } finally {
       setDeletingId(null);
     }
@@ -119,8 +147,7 @@ export function ElectionManager({
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-[#282a2a]">
       <AdminSidebar {...admin} />
-      <div className="lg:pl-67">
-        <SiteHeader className="h-18.25 border-b border-[#e6e6e3] bg-white px-5 pl-17 sm:px-8 lg:px-12" />
+      <div className="lg:pl-(--admin-sidebar-width) transition-[padding] duration-200">
         <section className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">
           <div className="flex flex-col justify-between gap-5 pb-7 sm:flex-row sm:items-end">
             <div>
@@ -198,21 +225,46 @@ export function ElectionManager({
                           Status
                           <select
                             value={election.state}
-                            disabled={election.state === "published" || updatingId === election.id || deletingId === election.id}
-                            onChange={(event) => updateState(election.id, event.target.value as ElectionState)}
+                            disabled={
+                              election.state === "published" ||
+                              updatingId === election.id ||
+                              deletingId === election.id
+                            }
+                            onChange={(event) =>
+                              updateState(
+                                election.id,
+                                event.target.value as ElectionState,
+                              )
+                            }
                             className="rounded-md border border-[#cdd8d2] bg-white px-3 py-2 text-sm text-[#303934] outline-none focus:border-[#1b6a5d] focus:ring-2 focus:ring-[#1b6a5d]/20 disabled:cursor-not-allowed disabled:bg-[#f2f3f1]"
                           >
-                            {(["draft", "scheduled", "open", "closed"] as const).map((state) => <option key={state} value={state}>{stateLabels[state]}</option>)}
-                            {election.state === "published" && <option value="published">Published</option>}
+                            {(
+                              ["draft", "scheduled", "open", "closed"] as const
+                            ).map((state) => (
+                              <option key={state} value={state}>
+                                {stateLabels[state]}
+                              </option>
+                            ))}
+                            {election.state === "published" && (
+                              <option value="published">Published</option>
+                            )}
                           </select>
                         </label>
                         <button
                           type="button"
                           onClick={() => setElectionToDelete(election)}
-                          disabled={updatingId === election.id || deletingId === election.id}
+                          disabled={
+                            updatingId === election.id ||
+                            deletingId === election.id
+                          }
                           className="rounded-md border border-[#e3b8ad] px-3 py-2 text-sm font-semibold text-[#a33f2c] transition hover:bg-[#fff3f0] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          <span className="inline-flex items-center gap-1.5"><TrashIcon className="size-4" />{deletingId === election.id ? "Deleting..." : "Delete"}</span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <TrashIcon className="size-4" />
+                            {deletingId === election.id
+                              ? "Deleting..."
+                              : "Delete"}
+                          </span>
                         </button>
                       </div>
                     </div>
@@ -259,7 +311,10 @@ function DeleteElectionDialog({
   onConfirm: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-60 grid place-items-center p-4" role="presentation">
+    <div
+      className="fixed inset-0 z-60 grid place-items-center p-4"
+      role="presentation"
+    >
       <button
         type="button"
         aria-label="Close delete election dialog"
@@ -267,16 +322,49 @@ function DeleteElectionDialog({
         disabled={isDeleting}
         className="absolute inset-0 bg-[#15231f]/45"
       />
-      <div role="dialog" aria-modal="true" aria-labelledby="delete-election-title" className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl">
-        <span className="grid size-11 place-items-center rounded-full bg-[#fbeae6] text-[#ad422e]"><WarningIcon className="size-5" /></span>
-        <h2 id="delete-election-title" className="mt-4 text-xl font-semibold tracking-[-0.02em] text-[#29332f]">Delete election?</h2>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-election-title"
+        className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+      >
+        <span className="grid size-11 place-items-center rounded-full bg-[#fbeae6] text-[#ad422e]">
+          <WarningIcon className="size-5" />
+        </span>
+        <h2
+          id="delete-election-title"
+          className="mt-4 text-xl font-semibold tracking-[-0.02em] text-[#29332f]"
+        >
+          Delete election?
+        </h2>
         <p className="mt-3 text-sm leading-6 text-[#626d67]">
-          You are about to permanently delete <span className="font-semibold text-[#303a35]">{election.title}</span>. This action cannot be undone.
+          You are about to permanently delete{" "}
+          <span className="font-semibold text-[#303a35]">{election.title}</span>
+          . This action cannot be undone.
         </p>
-        <p className="mt-2 text-xs leading-5 text-[#7a837e]">Elections with positions, voters, or ballots cannot be deleted.</p>
+        <p className="mt-2 text-xs leading-5 text-[#7a837e]">
+          Elections with positions, voters, or ballots cannot be deleted.
+        </p>
         <div className="mt-7 flex justify-end gap-3">
-          <button type="button" onClick={onClose} disabled={isDeleting} className="rounded-md border border-[#cfd8d3] px-4 py-2.5 text-sm font-semibold text-[#44504a] hover:bg-[#f5f7f5] disabled:opacity-50">Cancel</button>
-          <button type="button" onClick={onConfirm} disabled={isDeleting} className="rounded-md bg-[#b3422e] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#913222] disabled:cursor-not-allowed disabled:bg-[#d39b91]"><span className="inline-flex items-center gap-1.5"><TrashIcon className="size-4" />{isDeleting ? "Deleting..." : "Delete election"}</span></button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isDeleting}
+            className="rounded-md border border-[#cfd8d3] px-4 py-2.5 text-sm font-semibold text-[#44504a] hover:bg-[#f5f7f5] disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="rounded-md bg-[#b3422e] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#913222] disabled:cursor-not-allowed disabled:bg-[#d39b91]"
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <TrashIcon className="size-4" />
+              {isDeleting ? "Deleting..." : "Delete election"}
+            </span>
+          </button>
         </div>
       </div>
     </div>

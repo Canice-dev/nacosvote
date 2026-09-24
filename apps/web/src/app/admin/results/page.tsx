@@ -1,7 +1,6 @@
 import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
-import { SiteHeader } from "@/components/site-header";
 import { db } from "@/db";
 import {
   ballotVotes,
@@ -27,8 +26,7 @@ function ResultsShell({
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-[#282a2a]">
       <AdminSidebar {...admin} />
-      <div className="lg:pl-67">
-        <SiteHeader className="h-18.25 border-b border-[#e6e6e3] bg-white px-5 pl-17 sm:px-8 lg:px-12" />
+      <div className="lg:pl-(--admin-sidebar-width) transition-[padding] duration-200">
         <section className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">
           {children}
         </section>

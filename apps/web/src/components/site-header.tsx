@@ -17,7 +17,7 @@ export function SiteHeader({ className = "" }: SiteHeaderProps) {
   return (
     <>
       <header
-        className={`fixed inset-x-0 top-0 z-50 bg-white/45 backdrop-blur ${hasAdminSidebar ? "lg:left-67" : ""}`.trim()}
+        className={`fixed inset-x-0 top-0 z-50 bg-white/45 backdrop-blur ${hasAdminSidebar ? "lg:left-(--admin-sidebar-width)" : ""}`.trim()}
       >
         <div
           className={`mx-auto flex h-18.25 w-full items-center justify-between px-5 sm:px-0 ${hasAdminSidebar ? "max-w-none" : "max-w-6xl"} ${className}`.trim()}

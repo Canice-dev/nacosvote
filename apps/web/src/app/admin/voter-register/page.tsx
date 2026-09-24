@@ -8,7 +8,12 @@ import { requireAdmin } from "@/lib/admin-session";
 export default async function VoterRegisterPage() {
   const [admin, availableElections] = await Promise.all([
     requireAdmin(),
-    db.select({ id: elections.id, title: elections.title, state: elections.state })
+    db
+      .select({
+        id: elections.id,
+        title: elections.title,
+        state: elections.state,
+      })
       .from(elections)
       .orderBy(asc(elections.startsAt)),
   ]);

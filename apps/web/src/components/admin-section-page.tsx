@@ -1,5 +1,4 @@
 import { AdminSidebar } from "@/components/admin-sidebar";
-import { SiteHeader } from "@/components/site-header";
 import { requireAdmin } from "@/lib/admin-session";
 
 type AdminSectionPageProps = {
@@ -23,8 +22,7 @@ export async function AdminSectionPage({
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-[#282a2a]">
       <AdminSidebar {...admin} initials={initials} />
-      <div className="lg:pl-67">
-        <SiteHeader className="h-18.25 border-b border-[#e6e6e3] bg-white px-5 pl-17 sm:px-8 lg:px-12" />
+      <div className="lg:pl-(--admin-sidebar-width) transition-[padding] duration-200">
         <section className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">
           <div className="flex flex-col justify-between gap-5 border-b border-[#e5e6e2] pb-7 sm:flex-row sm:items-end">
             <div>
