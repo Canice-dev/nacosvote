@@ -99,5 +99,14 @@ function isOpenElectionConflict(error: unknown) {
 }
 
 function isForeignKeyConstraintError(error: unknown) {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "23503";
+  if (typeof error !== "object" || error === null) return false;
+
+  const databaseError = error as { code?: unknown; cause?: unknown };
+  // PostgreSQL uses 23503 for a foreign-key violation. Neon reports an
+  // ON DELETE RESTRICT violation as 23001 instead.
+  if (databaseError.code === "23503" || databaseError.code === "23001") {
+    return true;
+  }
+
+  return isForeignKeyConstraintError(databaseError.cause);
 }

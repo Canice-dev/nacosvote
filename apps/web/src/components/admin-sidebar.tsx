@@ -139,15 +139,17 @@ function SidebarContent({
                 NACOSVote
               </span>
             </Link>
-            <button
-              type="button"
-              onClick={onToggle ?? onNavigate}
-              aria-label="Collapse navigation"
-              className="grid size-9 place-items-center rounded-lg text-[#60706b] transition hover:bg-[#e9eeeb] hover:text-[#174f47]"
-              title="Collapse navigation"
-            >
-              <PanelLeft className="size-4.5" aria-hidden="true" />
-            </button>
+            {onToggle && (
+              <button
+                type="button"
+                onClick={onToggle}
+                aria-label="Collapse navigation"
+                className="grid size-9 place-items-center rounded-lg text-[#60706b] transition hover:bg-[#e9eeeb] hover:text-[#174f47]"
+                title="Collapse navigation"
+              >
+                <PanelLeft className="size-4.5" aria-hidden="true" />
+              </button>
+            )}
           </>
         )}
       </div>
