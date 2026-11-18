@@ -1,8 +1,9 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { DragEvent, FormEvent, useEffect, useRef, useState } from "react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { Check, ChevronDown, FileSpreadsheet, Upload, X } from "lucide-react";
 
 type Election = {
   id: string;
@@ -32,8 +33,36 @@ export function VoterRegisterManager({
   const [sourceElectionId, setSourceElectionId] = useState("");
   const [message, setMessage] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const canImport = admin.role === "manager" || admin.role === "super_admin";
+
+  function selectCsvFile(nextFile?: File) {
+    if (!nextFile) return;
+
+    if (
+      !nextFile.name.toLowerCase().endsWith(".csv") &&
+      nextFile.type !== "text/csv"
+    ) {
+      setMessage("Choose a CSV file to import voters.");
+      if (fileInput.current) fileInput.current.value = "";
+      return;
+    }
+
+    setFile(nextFile);
+    setMessage(undefined);
+  }
+
+  function clearSelectedFile() {
+    setFile(null);
+    if (fileInput.current) fileInput.current.value = "";
+  }
+
+  function handleFileDrop(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDraggingFile(false);
+    if (!isSubmitting) selectCsvFile(event.dataTransfer.files[0]);
+  }
 
   useEffect(() => {
     if (!canImport || !electionId) return;
@@ -81,8 +110,7 @@ export function VoterRegisterManager({
       setMessage(
         `${result.importedCount ?? 0} voters were imported successfully.`,
       );
-      setFile(null);
-      if (fileInput.current) fileInput.current.value = "";
+      clearSelectedFile();
     } catch {
       setMessage(
         "Unable to import voters. Check your connection and try again.",
@@ -136,7 +164,7 @@ export function VoterRegisterManager({
       />
       <div className="lg:pl-(--admin-sidebar-width) transition-[padding] duration-200">
         <section className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">
-          <div className="border-b border-[#e5e6e2] pb-7">
+          <div className="pb-7">
             <p className="text-sm font-medium text-[#707773]">Voter register</p>
             <h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-[#292d2b] sm:text-[34px]">
               Eligible voters
@@ -178,14 +206,81 @@ export function VoterRegisterManager({
                 >
                   CSV file
                 </label>
-                <input
-                  ref={fileInput}
-                  id="voter-file"
-                  type="file"
-                  accept=".csv,text/csv"
-                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                  className="mt-2 block w-full text-sm text-[#5c6762] file:mr-4 file:rounded-md file:border-0 file:bg-[#edf8f3] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#176353]"
-                />
+                <div
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    if (!isSubmitting) setIsDraggingFile(true);
+                  }}
+                  onDragLeave={() => setIsDraggingFile(false)}
+                  onDrop={handleFileDrop}
+                  className={`mt-2 rounded-xl border border-dashed p-4 transition-colors focus-within:ring-2 focus-within:ring-[#1b6a5d]/30 ${
+                    isDraggingFile
+                      ? "border-[#0f5a50] bg-[#eaf6f0]"
+                      : "border-[#cfdad5] bg-[#fbfdfc] hover:border-[#8ab5a3]"
+                  }`}
+                >
+                  <input
+                    ref={fileInput}
+                    id="voter-file"
+                    type="file"
+                    accept=".csv,text/csv"
+                    disabled={isSubmitting}
+                    onChange={(event) => selectCsvFile(event.target.files?.[0])}
+                    className="sr-only"
+                  />
+                  {file ? (
+                    <div className="flex items-center gap-3">
+                      <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-[#e7f4ed] text-[#176353]">
+                        <FileSpreadsheet className="size-5" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="truncate text-sm font-semibold text-[#39413e]"
+                          title={file.name}
+                        >
+                          {file.name}
+                        </p>
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-[#52766a]">
+                          <Check className="size-3.5" />
+                          Ready to import · {formatFileSize(file.size)}
+                        </p>
+                      </div>
+                      <label
+                        htmlFor="voter-file"
+                        className="cursor-pointer text-xs font-semibold text-[#176353] hover:underline"
+                      >
+                        Change
+                      </label>
+                      <button
+                        type="button"
+                        onClick={clearSelectedFile}
+                        disabled={isSubmitting}
+                        aria-label={`Remove ${file.name}`}
+                        className="grid size-8 shrink-0 place-items-center rounded-md text-[#69736e] hover:bg-[#edf1ee] hover:text-[#39413e] disabled:opacity-50"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center text-center">
+                      <span className="grid size-10 place-items-center rounded-full bg-[#edf8f3] text-[#176353]">
+                        <Upload className="size-5" />
+                      </span>
+                      <p className="mt-3 text-sm font-semibold text-[#39413e]">
+                        Drop your voter CSV here
+                      </p>
+                      <p className="mt-1 text-xs text-[#727975]">
+                        CSV format only
+                      </p>
+                      <label
+                        htmlFor="voter-file"
+                        className="mt-3 cursor-pointer rounded-md border border-[#cfdad5] bg-white px-3 py-2 text-sm font-semibold text-[#176353] transition hover:bg-[#edf8f3]"
+                      >
+                        Choose CSV file
+                      </label>
+                    </div>
+                  )}
+                </div>
                 <button
                   disabled={isSubmitting}
                   type="submit"
@@ -214,24 +309,32 @@ export function VoterRegisterManager({
                 >
                   Previous election
                 </label>
-                <select
-                  id="source-election"
-                  value={sourceElectionId}
-                  onChange={(event) => setSourceElectionId(event.target.value)}
-                  disabled={!sources.length || isSubmitting}
-                  className="mt-2 h-11 w-full rounded-md border border-[#cfdad5] bg-white px-3 text-sm disabled:bg-[#f4f6f5]"
-                >
-                  <option value="">
-                    {sources.length
-                      ? "Select a register"
-                      : "No previous registers available"}
-                  </option>
-                  {sources.map((source) => (
-                    <option key={source.id} value={source.id}>
-                      {source.title} — {source.voterCount} voters
+                <div className="relative mt-2">
+                  <select
+                    id="source-election"
+                    value={sourceElectionId}
+                    onChange={(event) =>
+                      setSourceElectionId(event.target.value)
+                    }
+                    disabled={!sources.length || isSubmitting}
+                    className="h-11 w-full appearance-none rounded-md border border-[#cfdad5] bg-white pl-3 pr-10 text-sm disabled:bg-[#f4f6f5]"
+                  >
+                    <option value="">
+                      {sources.length
+                        ? "Select a register"
+                        : "No previous registers available"}
                     </option>
-                  ))}
-                </select>
+                    {sources.map((source) => (
+                      <option key={source.id} value={source.id}>
+                        {source.title} — {source.voterCount} voters
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown
+                    aria-hidden="true"
+                    className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#4c4e4d]"
+                  />
+                </div>
                 <button
                   disabled={isSubmitting || !sourceElectionId}
                   onClick={reuseRegister}
@@ -257,6 +360,12 @@ export function VoterRegisterManager({
   );
 }
 
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function ElectionSelect({
   elections,
   value,
@@ -276,18 +385,24 @@ function ElectionSelect({
       >
         Target election
       </label>
-      <select
-        id={id}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-2 h-11 w-full rounded-md border border-[#cfdad5] bg-white px-3 text-sm"
-      >
-        {elections.map((election) => (
-          <option key={election.id} value={election.id}>
-            {election.title} ({election.state})
-          </option>
-        ))}
-      </select>
+      <div className="relative mt-2">
+        <select
+          id={id}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-11 w-full appearance-none rounded-md border border-[#cfdad5] bg-white pl-3 pr-10 text-sm"
+        >
+          {elections.map((election) => (
+            <option key={election.id} value={election.id}>
+              {election.title} ({election.state})
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          aria-hidden="true"
+          className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#4c4e4d]"
+        />
+      </div>
     </>
   );
 }

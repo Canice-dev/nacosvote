@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { POSITION_TITLES } from "@/lib/position-titles";
+import { ChevronDown, X } from "lucide-react";
 
 type Election = {
   id: string;
@@ -116,7 +117,7 @@ export function PositionManager({
       <AdminSidebar {...admin} />
       <div className="lg:pl-(--admin-sidebar-width) transition-[padding] duration-200">
         <section className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">
-          <div className="flex flex-col justify-between gap-5 border-b border-[#e5e6e2] pb-7 sm:flex-row sm:items-end">
+          <div className="flex flex-col justify-between gap-5 pb-7 sm:flex-row sm:items-end">
             <div>
               <p className="text-sm font-medium text-[#707773]">
                 Positions & candidates
@@ -275,7 +276,7 @@ export function PositionManager({
                 className="-mr-2 -mt-2 grid size-9 place-items-center rounded-md text-xl text-[#68736e] hover:bg-[#edf1ee] disabled:opacity-50"
                 aria-label="Close"
               >
-                ×
+                <X size={24} />
               </button>
             </div>
             <form className="mt-6" onSubmit={addPosition}>
@@ -285,25 +286,31 @@ export function PositionManager({
               >
                 Position title
               </label>
-              <select
-                id="position-title"
-                ref={selectRef}
-                value={selectedTitle}
-                onChange={(event) => setSelectedTitle(event.target.value)}
-                className="mt-2 block w-full rounded-md border border-[#cdd8d2] bg-white px-3 py-2.5 text-sm text-[#303934] outline-none focus:border-[#1b6a5d] focus:ring-2 focus:ring-[#1b6a5d]/20"
-              >
-                <option value="">Select a position</option>
-                {POSITION_TITLES.map((title) => (
-                  <option
-                    key={title}
-                    value={title}
-                    disabled={addedTitles.has(title)}
-                  >
-                    {title}
-                    {addedTitles.has(title) ? " (Already added)" : ""}
-                  </option>
-                ))}
-              </select>
+              <div className="relative mt-2">
+                <select
+                  id="position-title"
+                  ref={selectRef}
+                  value={selectedTitle}
+                  onChange={(event) => setSelectedTitle(event.target.value)}
+                  className="block w-full appearance-none rounded-md border border-[#cdd8d2] bg-white py-2.5 pl-3 pr-10 text-sm text-[#303934] outline-none focus:border-[#1b6a5d] focus:ring-2 focus:ring-[#1b6a5d]/20"
+                >
+                  <option value="">Select a position</option>
+                  {POSITION_TITLES.map((title) => (
+                    <option
+                      key={title}
+                      value={title}
+                      disabled={addedTitles.has(title)}
+                    >
+                      {title}
+                      {addedTitles.has(title) ? " (Already added)" : ""}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown
+                  aria-hidden="true"
+                  className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#4c4e4d]"
+                />
+              </div>
               {error && (
                 <p className="mt-2 text-sm text-[#b42318]" role="alert">
                   {error}
