@@ -1,12 +1,28 @@
-import { eq } from "drizzle-orm";
+import { and, count, eq, gte, lt, ne, sql } from "drizzle-orm";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { ElectionCountdown } from "@/components/election-countdown";
 import { db } from "@/db";
-import { elections } from "@/db/schema";
+import {
+  ballots,
+  elections,
+  otpChallenges,
+  studentEligibility,
+} from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-session";
 
 export const metadata = { title: "Overview | NACOS Vote" };
+
+function formatRemainingTime(endsAt: Date, now: Date) {
+  const remainingMinutes = Math.max(
+    0,
+    Math.floor((endsAt.getTime() - now.getTime()) / 60_000),
+  );
+  const hours = Math.floor(remainingMinutes / 60);
+  const minutes = remainingMinutes % 60;
+
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+}
 
 type IconName =
   | "account"
@@ -23,6 +39,80 @@ type IconName =
   | "results"
   | "shield"
   | "users";
+
+function getDateParts(date: Date, timezone: string) {
+  const parts = new Intl.DateTimeFormat("en-US-u-ca-gregory", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+
+  return {
+    year: Number(values.year),
+    month: Number(values.month),
+    day: Number(values.day),
+  };
+}
+
+function getUtcForLocalMidnight(
+  { year, month, day }: ReturnType<typeof getDateParts>,
+  timezone: string,
+) {
+  const localMidnight = Date.UTC(year, month - 1, day);
+  const formatter = new Intl.DateTimeFormat("en-US-u-ca-gregory", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hourCycle: "h23",
+  });
+  let utcGuess = localMidnight;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const parts = formatter.formatToParts(new Date(utcGuess));
+    const values = Object.fromEntries(
+      parts.map(({ type, value }) => [type, value]),
+    );
+    const localTimeAsUtc = Date.UTC(
+      Number(values.year),
+      Number(values.month) - 1,
+      Number(values.day),
+      Number(values.hour),
+      Number(values.minute),
+      Number(values.second),
+    );
+    const nextGuess = localMidnight - (localTimeAsUtc - utcGuess);
+    if (nextGuess === utcGuess) break;
+    utcGuess = nextGuess;
+  }
+
+  return new Date(utcGuess);
+}
+
+function getDayRange(date: Date, timezone: string) {
+  try {
+    const today = getDateParts(date, timezone);
+    const tomorrowAnchor = new Date(
+      Date.UTC(today.year, today.month - 1, today.day + 1, 12),
+    );
+    const tomorrow = getDateParts(tomorrowAnchor, timezone);
+
+    return {
+      start: getUtcForLocalMidnight(today, timezone),
+      end: getUtcForLocalMidnight(tomorrow, timezone),
+    };
+  } catch {
+    const start = new Date(
+      Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()),
+    );
+    return { start, end: new Date(start.getTime() + 24 * 60 * 60 * 1000) };
+  }
+}
 
 function Icon({
   name,
@@ -152,11 +242,78 @@ const activities = [
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
+  const now = new Date();
   const [openElection] = await db
-    .select({ endsAt: elections.endsAt, timezone: elections.timezone })
+    .select({
+      id: elections.id,
+      startsAt: elections.startsAt,
+      endsAt: elections.endsAt,
+      timezone: elections.timezone,
+    })
     .from(elections)
     .where(eq(elections.state, "open"))
     .limit(1);
+
+  let eligibleStudents = 0;
+  let verifiedToday = 0;
+  let ballotsCast = 0;
+
+  if (openElection) {
+    const { start: todayStart, end: tomorrowStart } = getDayRange(
+      now,
+      openElection.timezone,
+    );
+    const [eligibleResult, verifiedResult, ballotResult] = await Promise.all([
+      db
+        .select({ value: count() })
+        .from(studentEligibility)
+        .where(
+          and(
+            eq(studentEligibility.electionId, openElection.id),
+            ne(studentEligibility.status, "disabled"),
+          ),
+        ),
+      db
+        .select({
+          value: sql<number>`count(distinct ${otpChallenges.eligibilityId})::int`,
+        })
+        .from(otpChallenges)
+        .innerJoin(
+          studentEligibility,
+          eq(otpChallenges.eligibilityId, studentEligibility.id),
+        )
+        .where(
+          and(
+            eq(studentEligibility.electionId, openElection.id),
+            gte(otpChallenges.verifiedAt, todayStart),
+            lt(otpChallenges.verifiedAt, tomorrowStart),
+          ),
+        ),
+      db
+        .select({ value: count() })
+        .from(ballots)
+        .where(eq(ballots.electionId, openElection.id)),
+    ]);
+
+    eligibleStudents = eligibleResult[0]?.value ?? 0;
+    verifiedToday = verifiedResult[0]?.value ?? 0;
+    ballotsCast = ballotResult[0]?.value ?? 0;
+  }
+
+  const turnout =
+    eligibleStudents > 0
+      ? ((ballotsCast / eligibleStudents) * 100).toFixed(1)
+      : "0.0";
+  const timeRemaining = openElection
+    ? formatRemainingTime(openElection.endsAt, now)
+    : "—";
+  const electionStatus = !openElection
+    ? "No open election"
+    : now < openElection.startsAt
+      ? "Election scheduled"
+      : now >= openElection.endsAt
+        ? "Voting window ended"
+        : "Election open";
 
   const initials = admin.username.slice(0, 2).toUpperCase();
 
@@ -178,9 +335,21 @@ export default async function AdminDashboardPage() {
                 Hello, {admin.username}
               </h1>
             </div>
-            <span className="inline-flex w-fit items-center gap-2 rounded-full bg-[#e7f4ed] px-3 py-1.5 text-xs font-semibold text-[#177052]">
-              <span className="size-1.5 rounded-full bg-[#15925f]" /> Election
-              open
+            <span
+              className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${
+                electionStatus === "Election open"
+                  ? "bg-[#e7f4ed] text-[#177052]"
+                  : "bg-[#f1f2ef] text-[#5c645f]"
+              }`}
+            >
+              <span
+                className={`size-1.5 rounded-full ${
+                  electionStatus === "Election open"
+                    ? "bg-[#15925f]"
+                    : "bg-[#8a908c]"
+                }`}
+              />
+              {electionStatus}
             </span>
           </div>
 
@@ -229,17 +398,33 @@ export default async function AdminDashboardPage() {
 
           <section className="mt-7 grid grid-cols-2 bg-white md:grid-cols-4 rounded-3xl">
             {[
-              ["Eligible students", "4,892", "Registered to vote"],
-              ["Verified today", "1,248", "Completed email OTP"],
-              ["Ballots cast", "2,341", "47.8% turnout"],
-              ["Time remaining", "02:14", "Hours and minutes"],
-            ].map(([label, value, detail], index) => (
+              {
+                label: "Eligible students",
+                value: eligibleStudents.toLocaleString("en-NG"),
+                detail: openElection ? "Registered to vote" : "No open election",
+              },
+              {
+                label: "Verified today",
+                value: verifiedToday.toLocaleString("en-NG"),
+                detail: openElection ? "Completed email OTP" : "No open election",
+              },
+              {
+                label: "Ballots cast",
+                value: ballotsCast.toLocaleString("en-NG"),
+                detail: `${turnout}% turnout`,
+              },
+              {
+                label: "Time remaining",
+                value: timeRemaining,
+                detail: openElection ? "Hours and minutes" : "No open election",
+              },
+            ].map(({ label, value, detail }, index) => (
               <div
                 key={label}
                 className={`p-5 sm:p-6 ${index > 0 ? "border-l border-[#e7e8e5]" : ""}`}
               >
                 <p className="text-xs font-medium text-[#7b827e]">{label}</p>
-                <p className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[#303533]">
+                  <p className="mt-3 font-mono text-3xl font-semibold tracking-[-0.04em] text-[#303533]">
                   {value}
                 </p>
                 <p className="mt-2 text-xs text-[#8a908c]">{detail}</p>

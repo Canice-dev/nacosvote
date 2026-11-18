@@ -1,13 +1,33 @@
-import { AdminSectionPage } from "@/components/admin-section-page";
+import { ScheduleManager } from "@/components/schedule-manager";
+import { desc } from "drizzle-orm";
 
-export default function SchedulePage() {
+import { db } from "@/db";
+import { elections } from "@/db/schema";
+import { requireAdmin } from "@/lib/admin-session";
+
+export default async function SchedulePage() {
+  const admin = await requireAdmin();
+  const existingElections = await db
+    .select({
+      id: elections.id,
+      title: elections.title,
+      departmentName: elections.departmentName,
+      timezone: elections.timezone,
+      startsAt: elections.startsAt,
+      endsAt: elections.endsAt,
+      state: elections.state,
+    })
+    .from(elections)
+    .orderBy(desc(elections.startsAt));
+
   return (
-    <AdminSectionPage
-      eyebrow="Schedule & controls"
-      title="Schedule and controls"
-      description="Set voting dates and manage the election lifecycle."
-      action="Edit schedule"
-      emptyMessage="No election schedule has been configured."
+    <ScheduleManager
+      initialElections={existingElections}
+      admin={{
+        username: admin.username,
+        email: admin.email,
+        initials: admin.username.slice(0, 2).toUpperCase(),
+      }}
     />
   );
 }
