@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
-import { Trash, TriangleAlert } from "lucide-react";
+import { ChevronDown, Trash, TriangleAlert, X } from "lucide-react";
 
 type ElectionState = "draft" | "scheduled" | "open" | "closed" | "published";
 type Election = {
@@ -189,32 +189,38 @@ export function ElectionManager({
                       <div className="flex flex-wrap items-center gap-3">
                         <label className="flex items-center gap-3 text-sm font-medium text-[#4c5752]">
                           Status
-                          <select
-                            value={election.state}
-                            disabled={
-                              election.state === "published" ||
-                              updatingId === election.id ||
-                              deletingId === election.id
-                            }
-                            onChange={(event) =>
-                              updateState(
-                                election.id,
-                                event.target.value as ElectionState,
-                              )
-                            }
-                            className="rounded-md border border-[#cdd8d2] bg-white px-3 py-2 text-sm text-[#303934] outline-none focus:border-[#1b6a5d] focus:ring-2 focus:ring-[#1b6a5d]/20 disabled:cursor-not-allowed disabled:bg-[#f2f3f1]"
-                          >
-                            {(
-                              ["draft", "scheduled", "open", "closed"] as const
-                            ).map((state) => (
-                              <option key={state} value={state}>
-                                {stateLabels[state]}
-                              </option>
-                            ))}
-                            {election.state === "published" && (
-                              <option value="published">Published</option>
-                            )}
-                          </select>
+                          <span className="relative">
+                            <select
+                              value={election.state}
+                              disabled={
+                                election.state === "published" ||
+                                updatingId === election.id ||
+                                deletingId === election.id
+                              }
+                              onChange={(event) =>
+                                updateState(
+                                  election.id,
+                                  event.target.value as ElectionState,
+                                )
+                              }
+                              className="appearance-none rounded-md border border-[#cdd8d2] bg-white py-2 pl-3 pr-10 text-sm text-[#303934] outline-none focus:border-[#1b6a5d] focus:ring-2 focus:ring-[#1b6a5d]/20 disabled:cursor-not-allowed disabled:bg-[#f2f3f1]"
+                            >
+                              {(
+                                ["draft", "scheduled", "open", "closed"] as const
+                              ).map((state) => (
+                                <option key={state} value={state}>
+                                  {stateLabels[state]}
+                                </option>
+                              ))}
+                              {election.state === "published" && (
+                                <option value="published">Published</option>
+                              )}
+                            </select>
+                            <ChevronDown
+                              aria-hidden="true"
+                              className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#4c4e4d]"
+                            />
+                          </span>
                         </label>
                         <button
                           type="button"
@@ -416,7 +422,7 @@ function CreateElectionDialog({
             className="-mr-2 -mt-2 grid size-9 place-items-center rounded-md text-xl text-[#68736e] hover:bg-[#edf1ee] disabled:opacity-50"
             aria-label="Close"
           >
-            &times;
+            <X size={24} />
           </button>
         </div>
         <form
@@ -473,20 +479,26 @@ function CreateElectionDialog({
             />
           </Field>
           <Field label="Initial status" htmlFor="election-state">
-            <select
-              id="election-state"
-              name="state"
-              defaultValue="draft"
-              className={inputClass}
-            >
-              {(["draft", "scheduled", "open", "closed"] as const).map(
-                (state) => (
-                  <option key={state} value={state}>
-                    {stateLabels[state]}
-                  </option>
-                ),
-              )}
-            </select>
+            <div className="relative mt-2">
+              <select
+                id="election-state"
+                name="state"
+                defaultValue="draft"
+                className={selectClass}
+              >
+                {(["draft", "scheduled", "open", "closed"] as const).map(
+                  (state) => (
+                    <option key={state} value={state}>
+                      {stateLabels[state]}
+                    </option>
+                  ),
+                )}
+              </select>
+              <ChevronDown
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#4c4e4d]"
+              />
+            </div>
           </Field>
           {error && (
             <p className="sm:col-span-2 text-sm text-[#b42318]" role="alert">
@@ -516,8 +528,10 @@ function CreateElectionDialog({
   );
 }
 
-const inputClass =
-  "mt-2 block w-full rounded-md border border-[#cdd8d2] bg-white px-3 py-2.5 text-sm text-[#303934] outline-none focus:border-[#1b6a5d] focus:ring-2 focus:ring-[#1b6a5d]/20";
+const controlClass =
+  "block w-full rounded-md border border-[#cdd8d2] bg-white py-2.5 text-sm text-[#303934] outline-none focus:border-[#1b6a5d] focus:ring-2 focus:ring-[#1b6a5d]/20";
+const inputClass = `mt-2 ${controlClass} px-3`;
+const selectClass = `${controlClass} appearance-none pl-3 pr-10`;
 function Field({
   label,
   htmlFor,
