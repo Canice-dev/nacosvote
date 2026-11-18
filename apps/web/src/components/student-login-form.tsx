@@ -24,20 +24,14 @@ export function StudentLoginForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ matricNumber }),
       });
-      const result: { message?: string; developmentCode?: string } =
-        await response.json();
+      const result: { message?: string } = await response.json();
 
       if (!response.ok) {
         setMessage(result.message ?? "Unable to start sign-in.");
         return;
       }
 
-      const developmentHint = result.developmentCode
-        ? ` Development code: ${result.developmentCode}`
-        : "";
-      setMessage(
-        `${result.message ?? "Enter the code to continue."}${developmentHint}`,
-      );
+      setMessage(result.message ?? "Enter the code sent to your school email.");
       setStep("otp");
     } catch {
       setMessage("Unable to reach the sign-in service. Please try again.");

@@ -17,7 +17,6 @@ import { useRouter } from "expo-router";
 type Step = "matric" | "otp";
 type AuthResponse = {
   message?: string;
-  developmentCode?: string;
   nextPath?: string;
   alreadyVoted?: boolean;
   developmentError?: string;
@@ -66,12 +65,7 @@ export default function SignIn() {
         setMessage(result.message ?? "Unable to start sign-in.");
         return;
       }
-      const developmentHint = result.developmentCode
-        ? ` Development code: ${result.developmentCode}`
-        : "";
-      setMessage(
-        `${result.message ?? "Enter the code to continue."}${developmentHint}`,
-      );
+      setMessage(result.message ?? "Enter the code sent to your school email.");
       setStep("otp");
     } catch (error) {
       setMessage(
