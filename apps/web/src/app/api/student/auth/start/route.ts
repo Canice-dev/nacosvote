@@ -9,12 +9,23 @@ import { elections, otpChallenges, studentEligibility } from "@/db/schema";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const GENERIC_MESSAGE =
-  "If your details are eligible, a verification code has been sent to your registered school email.";
 const MATRIC_NUMBER_PATTERN = /^\d{4}\/\d{6}$/;
 
 function normalizeMatricNumber(value: string) {
   return value.trim().replaceAll(" ", "");
+}
+
+function maskEmail(email: string) {
+  const [localPart, domain] = email.trim().split("@");
+
+  if (!localPart || !domain) return "your registered school email";
+
+  const visibleEnd = localPart.length > 2 ? localPart.slice(-1) : "";
+  const maskedLocal = `${localPart[0]}${"*".repeat(
+    Math.max(3, localPart.length - 1 - visibleEnd.length),
+  )}${visibleEnd}`;
+
+  return `${maskedLocal}@${domain}`;
 }
 
 export async function POST(request: Request) {
@@ -95,6 +106,7 @@ export async function POST(request: Request) {
     const [eligibility] = await db
       .select({
         id: studentEligibility.id,
+        fullName: studentEligibility.fullName,
         schoolEmail: studentEligibility.schoolEmail,
       })
       .from(studentEligibility)
@@ -186,7 +198,7 @@ export async function POST(request: Request) {
 
     return Response.json(
       {
-        message: GENERIC_MESSAGE,
+        message: `We sent a verification code for ${eligibility.fullName} to ${maskEmail(eligibility.schoolEmail)}.`,
       },
       { status: 202 },
     );
