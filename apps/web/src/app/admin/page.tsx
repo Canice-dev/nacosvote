@@ -1,10 +1,12 @@
-import { and, count, eq, gte, lt, ne, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, lt, ne, sql } from "drizzle-orm";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { ElectionCountdown } from "@/components/election-countdown";
 import { db } from "@/db";
 import {
   ballots,
+  adminAuditEvents,
+  admins,
   elections,
   otpChallenges,
   studentEligibility,
@@ -47,7 +49,9 @@ function getDateParts(date: Date, timezone: string) {
     month: "numeric",
     day: "numeric",
   }).formatToParts(date);
-  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  const values = Object.fromEntries(
+    parts.map(({ type, value }) => [type, value]),
+  );
 
   return {
     year: Number(values.year),
@@ -218,41 +222,132 @@ function Icon({
   );
 }
 
-const activities = [
-  [
-    "Voter register imported",
-    "4,892 eligible students added",
-    "18 minutes ago",
-    "users",
-  ],
-  [
-    "Candidate updated",
-    "Vice President manifesto revised",
-    "1 hour ago",
-    "candidates",
-  ],
-  [
-    "Election opened",
-    "Voting is now available to students",
-    "Today, 09:00",
-    "election",
-  ],
-  ["Admin account created", "Observer role assigned", "Yesterday", "account"],
-] as const;
+type AuditActivity = {
+  id: string;
+  action: string;
+  actorUsername: string | null;
+  createdAt: Date;
+};
+
+function getActivityTitle(action: string) {
+  const titles: Record<string, string> = {
+    "admin.created": "Admin account created",
+    "admin.deactivated": "Admin account deleted",
+    "admin.role_updated": "Admin role updated",
+    "candidate.created": "Candidate added",
+    "election.created": "Election created",
+    "election.deleted": "Election deleted",
+    "election.schedule_updated": "Election schedule updated",
+    "election.status_changed": "Election status changed",
+    "position.created": "Position added",
+    "voter_register.imported": "Voter register imported",
+  };
+  return (
+    titles[action] ??
+    action
+      .replace(/[._]/g, " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase())
+  );
+}
+
+function getActivityDetail(activity: AuditActivity) {
+  return activity.actorUsername ? "By " + activity.actorUsername : "By an administrator";
+}
+
+function getActivityIcon(action: string): IconName {
+  if (action.startsWith("admin.")) return "account";
+  if (action.startsWith("candidate.") || action.startsWith("position."))
+    return "candidates";
+  if (action.startsWith("election.")) return "election";
+  if (action.startsWith("voter_register.")) return "users";
+  return "audit";
+}
+
+function formatActivityTime(date: Date, now: Date) {
+  const elapsedMinutes = Math.max(
+    0,
+    Math.floor((now.getTime() - date.getTime()) / 60_000),
+  );
+  const relative = new Intl.RelativeTimeFormat("en-NG", { numeric: "auto" });
+  if (elapsedMinutes < 60) return relative.format(-elapsedMinutes, "minute");
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return relative.format(-elapsedHours, "hour");
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  if (elapsedDays < 7) return relative.format(-elapsedDays, "day");
+  return new Intl.DateTimeFormat("en-NG", {
+    day: "numeric",
+    month: "short",
+    timeZone: "Africa/Lagos",
+  }).format(date);
+}
+
+function formatElectionDate(date: Date | null, timezone: string) {
+  if (!date) return "Not scheduled";
+  try {
+    return new Intl.DateTimeFormat("en-NG", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: timezone,
+    }).format(date);
+  } catch {
+    return new Intl.DateTimeFormat("en-NG", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Africa/Lagos",
+    }).format(date);
+  }
+}
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
   const now = new Date();
-  const [openElection] = await db
-    .select({
-      id: elections.id,
-      startsAt: elections.startsAt,
-      endsAt: elections.endsAt,
-      timezone: elections.timezone,
-    })
-    .from(elections)
-    .where(eq(elections.state, "open"))
-    .limit(1);
+  const [openElections, latestElections, recentActivities] = await Promise.all([
+    db
+      .select({
+        id: elections.id,
+        title: elections.title,
+        state: elections.state,
+        startsAt: elections.startsAt,
+        endsAt: elections.endsAt,
+        closedAt: elections.closedAt,
+        publishedAt: elections.publishedAt,
+        createdAt: elections.createdAt,
+        updatedAt: elections.updatedAt,
+        timezone: elections.timezone,
+      })
+      .from(elections)
+      .where(eq(elections.state, "open"))
+      .limit(1),
+    db
+      .select({
+        id: elections.id,
+        title: elections.title,
+        state: elections.state,
+        startsAt: elections.startsAt,
+        endsAt: elections.endsAt,
+        closedAt: elections.closedAt,
+        publishedAt: elections.publishedAt,
+        createdAt: elections.createdAt,
+        updatedAt: elections.updatedAt,
+        timezone: elections.timezone,
+      })
+      .from(elections)
+      .orderBy(desc(elections.createdAt))
+      .limit(1),
+    db
+      .select({
+        id: adminAuditEvents.id,
+        action: adminAuditEvents.action,
+        actorUsername: admins.username,
+        createdAt: adminAuditEvents.createdAt,
+      })
+      .from(adminAuditEvents)
+      .leftJoin(admins, eq(adminAuditEvents.actorAdminId, admins.id))
+      .orderBy(desc(adminAuditEvents.createdAt))
+      .limit(4),
+  ]);
+  const openElection = openElections[0];
+  const timelineElection = openElection ?? latestElections[0];
 
   let eligibleStudents = 0;
   let verifiedToday = 0;
@@ -314,6 +409,49 @@ export default async function AdminDashboardPage() {
       : now >= openElection.endsAt
         ? "Voting window ended"
         : "Election open";
+
+  const stateOrder = {
+    draft: 0,
+    scheduled: 1,
+    open: 2,
+    closed: 3,
+    published: 4,
+  } as const;
+  const currentStage = timelineElection
+    ? stateOrder[timelineElection.state]
+    : -1;
+  const electionTimeline = [
+    { stage: "Draft", date: timelineElection?.createdAt ?? null },
+    { stage: "Scheduled", date: timelineElection?.startsAt ?? null },
+    { stage: "Open", date: timelineElection?.startsAt ?? null },
+    {
+      stage: "Closed",
+      date: timelineElection?.closedAt ?? timelineElection?.endsAt ?? null,
+    },
+    {
+      stage: "Published",
+      date:
+        timelineElection?.publishedAt ??
+        (timelineElection?.state === "published"
+          ? timelineElection.updatedAt
+          : null) ??
+        null,
+    },
+  ].map(({ stage, date }, index) => ({
+    stage,
+    date: formatElectionDate(
+      date,
+      timelineElection?.timezone ?? "Africa/Lagos",
+    ),
+    state:
+      currentStage < 0
+        ? "Pending"
+        : index < currentStage
+          ? "Completed"
+          : index === currentStage
+            ? "Current"
+            : "Pending",
+  }));
 
   const initials = admin.username.slice(0, 2).toUpperCase();
 
@@ -401,12 +539,16 @@ export default async function AdminDashboardPage() {
               {
                 label: "Eligible students",
                 value: eligibleStudents.toLocaleString("en-NG"),
-                detail: openElection ? "Registered to vote" : "No open election",
+                detail: openElection
+                  ? "Registered to vote"
+                  : "No open election",
               },
               {
                 label: "Verified today",
                 value: verifiedToday.toLocaleString("en-NG"),
-                detail: openElection ? "Completed email OTP" : "No open election",
+                detail: openElection
+                  ? "Completed email OTP"
+                  : "No open election",
               },
               {
                 label: "Ballots cast",
@@ -424,7 +566,7 @@ export default async function AdminDashboardPage() {
                 className={`p-5 sm:p-6 ${index > 0 ? "border-l border-[#e7e8e5]" : ""}`}
               >
                 <p className="text-xs font-medium text-[#7b827e]">{label}</p>
-                  <p className="mt-3 font-mono text-3xl font-semibold tracking-[-0.04em] text-[#303533]">
+                <p className="mt-3 font-mono text-3xl font-semibold tracking-[-0.04em] text-[#303533]">
                   {value}
                 </p>
                 <p className="mt-2 text-xs text-[#8a908c]">{detail}</p>
@@ -439,61 +581,71 @@ export default async function AdminDashboardPage() {
                   Recent activity
                 </h2>
                 <a
-                  href="#"
+                  href="/admin/audit-log"
                   className="text-sm font-medium text-[#176356] hover:underline"
                 >
                   View audit log
                 </a>
               </div>
-              <div className="mt-4 divide-y divide-[#e7e8e5] border-y border-[#e1e3df] bg-white">
-                {activities.map(([title, detail, time, icon]) => (
-                  <div key={title} className="flex gap-4 px-4 py-4 sm:px-5">
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#f2f5f3] text-[#397166]">
-                      <Icon name={icon} className="size-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-[#3c4240]">
-                        {title}
-                      </p>
-                      <p className="mt-0.5 text-xs text-[#808783]">{detail}</p>
+              <div className="mt-4 rounded-3xl divide-y divide-[#e7e8e5] bg-white">
+                {recentActivities.length ? (
+                  recentActivities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="flex gap-4 px-4 py-4 sm:px-5"
+                    >
+                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#f2f5f3] text-[#397166]">
+                        <Icon
+                          name={getActivityIcon(activity.action)}
+                          className="size-4"
+                        />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-[#3c4240]">
+                          {getActivityTitle(activity.action)}
+                        </p>
+                        <p className="mt-0.5 text-xs text-[#808783]">
+                          {getActivityDetail(activity)}
+                        </p>
+                      </div>
+                      <time
+                        dateTime={activity.createdAt.toISOString()}
+                        className="shrink-0 text-xs text-[#929894]"
+                      >
+                        {formatActivityTime(activity.createdAt, now)}
+                      </time>
                     </div>
-                    <time className="shrink-0 text-xs text-[#929894]">
-                      {time}
-                    </time>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="px-5 py-8 text-sm text-[#808783]">
+                    No audit activity yet.
+                  </p>
+                )}
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold tracking-tight text-[#343937]">
-                  Election timeline
-                </h2>
-                <button
-                  aria-label="More election options"
-                  className="text-[#6f7772]"
-                >
-                  <Icon name="more" className="size-5" />
-                </button>
+                <div>
+                  <h2 className="text-lg font-semibold tracking-tight text-[#343937]">
+                    Election timeline
+                  </h2>
+                  <p className="mt-1 text-xs text-[#808783]">
+                    {timelineElection?.title ?? "No election configured"}
+                  </p>
+                </div>
               </div>
-              <div className="mt-4 border border-[#e1e3df] bg-white p-5 sm:p-6">
+              <div className="mt-4 rounded-3xl bg-white p-5 sm:p-6">
                 <ol className="space-y-5">
-                  {[
-                    ["Draft", "Completed", "Apr 10, 2026"],
-                    ["Scheduled", "Completed", "Apr 12, 2026"],
-                    ["Open", "Current", "Today, 09:00"],
-                    ["Closed", "Pending", "Scheduled for 5:00 PM"],
-                    ["Published", "Pending", "After review"],
-                  ].map(([stage, state, date], index) => (
+                  {electionTimeline.map(({ stage, state, date }, index) => (
                     <li key={stage} className="flex gap-4">
                       <div className="relative flex w-4 justify-center">
-                        {index < 4 && (
+                        {index < electionTimeline.length - 1 && (
                           <span
-                            className={`absolute top-4 h-8 w-px ${index < 2 ? "bg-[#4e9c87]" : "bg-[#dde2df]"}`}
+                            className={`absolute top-4 h-8 w-px ${index < currentStage ? "bg-[#4e9c87]" : "bg-[#dde2df]"}`}
                           />
                         )}
                         <span
-                          className={`mt-1 size-2.5 rounded-full ring-4 ${index < 2 ? "bg-[#389b7c] ring-[#e6f4ed]" : index === 2 ? "bg-[#176356] ring-[#dceee8]" : "bg-[#c9cfcb] ring-[#f1f2f0]"}`}
+                          className={`mt-1 size-2.5 rounded-full ring-4 ${state === "Completed" ? "bg-[#389b7c] ring-[#e6f4ed]" : state === "Current" ? "bg-[#176356] ring-[#dceee8]" : "bg-[#c9cfcb] ring-[#f1f2f0]"}`}
                         />
                       </div>
                       <div className="flex flex-1 items-start justify-between gap-4">
@@ -514,9 +666,12 @@ export default async function AdminDashboardPage() {
                     </li>
                   ))}
                 </ol>
-                <button className="mt-6 w-full border border-[#cdd9d4] px-4 py-2.5 text-sm font-medium text-[#1a6256] transition hover:bg-[#f2faf6]">
+                <a
+                  href="/admin/election-setup"
+                  className="mx-auto mt-6 block w-fit text-sm font-medium text-[#176356] hover:underline"
+                >
                   Manage election controls
-                </button>
+                </a>
               </div>
             </div>
           </section>

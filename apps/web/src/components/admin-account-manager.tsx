@@ -4,6 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Trash2, X } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 type Role = "super_admin" | "manager" | "observer";
 type Account = {
@@ -41,6 +51,7 @@ export function AdminAccountManager({
 }) {
   const [accounts, setAccounts] = useState(initialAccounts);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
   const [notice, setNotice] = useState("");
   const [actionError, setActionError] = useState("");
   const [roleDrafts, setRoleDrafts] = useState<Record<string, Role>>({});
@@ -94,12 +105,6 @@ export function AdminAccountManager({
   }
 
   async function deleteAccount(account: Account) {
-    if (
-      !window.confirm(
-        `Delete ${account.username}'s administrator account? They will lose access immediately. Their record will remain for election and audit history.`,
-      )
-    )
-      return;
     setUpdatingAccountId(account.id);
     setActionError("");
     setNotice("");
@@ -117,6 +122,7 @@ export function AdminAccountManager({
       setAccounts((current) =>
         current.filter((item) => item.id !== account.id),
       );
+      setDeleteTarget(null);
       setNotice(`${account.username}'s administrator account was deleted.`);
     } catch {
       setActionError(
@@ -253,7 +259,10 @@ export function AdminAccountManager({
                             </button>
                             <button
                               type="button"
-                              onClick={() => deleteAccount(account)}
+                              onClick={() => {
+                                setActionError("");
+                                setDeleteTarget(account);
+                              }}
                               disabled={
                                 updatingAccountId === account.id ||
                                 account.id === admin.id
@@ -292,7 +301,78 @@ export function AdminAccountManager({
           }}
         />
       )}
+      {deleteTarget && (
+        <DeleteAdminDialog
+          account={deleteTarget}
+          error={actionError}
+          isDeleting={updatingAccountId === deleteTarget.id}
+          onClose={() => {
+            setDeleteTarget(null);
+            setActionError("");
+          }}
+          onConfirm={() => deleteAccount(deleteTarget)}
+        />
+      )}
     </main>
+  );
+}
+
+function DeleteAdminDialog({
+  account,
+  error,
+  isDeleting,
+  onClose,
+  onConfirm,
+}: {
+  account: Account;
+  error: string;
+  isDeleting: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <AlertDialog
+      open
+      onOpenChange={(open) => {
+        if (!open && !isDeleting) onClose();
+      }}
+    >
+      <AlertDialogContent
+        overlayClassName="z-80 bg-[#15231f]/45 backdrop-blur-sm"
+        className="z-90 gap-5 p-6"
+      >
+        <AlertDialogHeader className="text-left">
+          <AlertDialogTitle className="text-xl font-semibold tracking-[-0.02em] text-[#29332f]">
+            Delete administrator?
+          </AlertDialogTitle>
+          <AlertDialogDescription className="text-sm leading-6 text-[#737c77]">
+            {account.username} will lose access immediately. Their record will
+            remain for election and audit history.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        {error && (
+          <p className="text-sm text-[#b42318]" role="alert">
+            {error}
+          </p>
+        )}
+        <AlertDialogFooter className="mt-1 flex-row justify-end border-0 bg-transparent p-0">
+          <AlertDialogCancel
+            disabled={isDeleting}
+            className="h-auto rounded-md border-[#cfd8d3] px-4 py-2.5 text-sm font-semibold text-[#44504a] hover:bg-[#f5f7f5]"
+          >
+            Cancel
+          </AlertDialogCancel>
+          <Button
+            type="button"
+            onClick={onConfirm}
+            disabled={isDeleting}
+            className="h-auto rounded-md bg-[#b42318] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#941f17]"
+          >
+            {isDeleting ? "Deleting..." : "Delete administrator"}
+          </Button>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
