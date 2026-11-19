@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown, Trash2, X } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
 
@@ -30,12 +31,101 @@ export function AdminAccountManager({
   admin,
 }: {
   initialAccounts: Account[];
-  admin: { username: string; email: string; initials: string; role: Role };
+  admin: {
+    id: string;
+    username: string;
+    email: string;
+    initials: string;
+    role: Role;
+  };
 }) {
   const [accounts, setAccounts] = useState(initialAccounts);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [notice, setNotice] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [roleDrafts, setRoleDrafts] = useState<Record<string, Role>>({});
+  const [updatingAccountId, setUpdatingAccountId] = useState<string | null>(
+    null,
+  );
   const canManageAccounts = admin.role === "super_admin";
+
+  async function updateRole(account: Account) {
+    const role = roleDrafts[account.id] ?? account.role;
+    if (role === account.role) return;
+    setUpdatingAccountId(account.id);
+    setActionError("");
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/accounts/${account.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      });
+      const result = (await response.json()) as {
+        message?: string;
+        admin?: { id: string; role: Role };
+      };
+      if (!response.ok || !result.admin) {
+        setActionError(
+          result.message ?? "Unable to update the administrator role.",
+        );
+        return;
+      }
+      setAccounts((current) =>
+        current.map((item) =>
+          item.id === account.id ? { ...item, role: result.admin!.role } : item,
+        ),
+      );
+      setRoleDrafts((current) => {
+        const next = { ...current };
+        delete next[account.id];
+        return next;
+      });
+      setNotice(
+        `${account.username}'s role was updated to ${roleLabel[result.admin.role]}.`,
+      );
+    } catch {
+      setActionError(
+        "Unable to update the administrator role. Check your connection and try again.",
+      );
+    } finally {
+      setUpdatingAccountId(null);
+    }
+  }
+
+  async function deleteAccount(account: Account) {
+    if (
+      !window.confirm(
+        `Delete ${account.username}'s administrator account? They will lose access immediately. Their record will remain for election and audit history.`,
+      )
+    )
+      return;
+    setUpdatingAccountId(account.id);
+    setActionError("");
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/accounts/${account.id}`, {
+        method: "DELETE",
+      });
+      const result = (await response.json()) as { message?: string };
+      if (!response.ok) {
+        setActionError(
+          result.message ?? "Unable to delete the administrator account.",
+        );
+        return;
+      }
+      setAccounts((current) =>
+        current.filter((item) => item.id !== account.id),
+      );
+      setNotice(`${account.username}'s administrator account was deleted.`);
+    } catch {
+      setActionError(
+        "Unable to delete the administrator account. Check your connection and try again.",
+      );
+    } finally {
+      setUpdatingAccountId(null);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-[#282a2a]">
@@ -76,49 +166,115 @@ export function AdminAccountManager({
               {notice}
             </p>
           )}
+          {actionError && (
+            <p className="mt-3 text-sm text-[#b42318]" role="alert">
+              {actionError}
+            </p>
+          )}
           <div className="mt-7 overflow-hidden rounded-lg border border-[#e1e6e2] bg-white">
             <div className="border-b border-[#e9ece9] px-5 py-4">
               <h2 className="text-base font-semibold text-[#34403b]">
                 All administrators
               </h2>
             </div>
-            {accounts.length === 0 ? (
+            {accounts.filter((account) => account.isActive).length === 0 ? (
               <p className="px-5 py-12 text-center text-sm text-[#737c77]">
-                No administrator accounts exist yet.
+                No active administrator accounts exist.
               </p>
             ) : (
               <ul className="divide-y divide-[#edf0ed]">
-                {accounts.map((account) => (
-                  <li
-                    key={account.id}
-                    className="flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center"
-                  >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#d9e7e2] text-sm font-semibold text-[#1c554c]">
-                        {account.username.slice(0, 2).toUpperCase()}
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[#35413b]">
-                          {account.username}
-                        </p>
-                        <p className="truncate text-sm text-[#7a837e]">
-                          {account.email}
-                        </p>
+                {accounts
+                  .filter((account) => account.isActive)
+                  .map((account) => (
+                    <li
+                      key={account.id}
+                      className="flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center"
+                    >
+                      <div className="flex min-w-0 items-center gap-3">
+                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#e84e3c] text-xs font-medium text-white">
+                          {account.username.slice(0, 2).toUpperCase()}
+                        </span>
+                        <div className="min-w-0">
+                        <div className="flex min-w-0 items-center gap-1.5">
+                          <p className="truncate text-sm font-semibold text-[#35413b]">
+                            {account.username}
+                          </p>
+                          <VerifiedBadge role={account.role} />
+                        </div>
+                          <p className="truncate text-sm text-[#7a837e]">
+                            {account.email}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${roleStyle[account.role]}`}
-                      >
-                        {roleLabel[account.role]}
-                      </span>
-                      <span
-                        className={`size-2 rounded-full ${account.isActive ? "bg-[#1f9a68]" : "bg-[#a6afaa]"}`}
-                        aria-label={account.isActive ? "Active" : "Inactive"}
-                      />
-                    </div>
-                  </li>
-                ))}
+                      <div className="flex flex-wrap items-center gap-3">
+                        {canManageAccounts ? (
+                          <>
+                            <div className="relative">
+                              <select
+                                aria-label={`Role for ${account.username}`}
+                                value={roleDrafts[account.id] ?? account.role}
+                                disabled={updatingAccountId === account.id}
+                                onChange={(event) =>
+                                  setRoleDrafts((current) => ({
+                                    ...current,
+                                    [account.id]: event.target.value as Role,
+                                  }))
+                                }
+                                className={`appearance-none rounded-md border border-[#cdd8d2] bg-white py-2 pl-3 pr-9 text-xs font-semibold outline-none focus:border-[#1b6a5d] focus:ring-2 focus:ring-[#1b6a5d]/20 ${roleStyle[roleDrafts[account.id] ?? account.role]}`}
+                              >
+                                {(
+                                  [
+                                    "super_admin",
+                                    "manager",
+                                    "observer",
+                                  ] as const
+                                ).map((role) => (
+                                  <option key={role} value={role}>
+                                    {roleLabel[role]}
+                                  </option>
+                                ))}
+                              </select>
+                              <ChevronDown
+                                aria-hidden="true"
+                                className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2 text-[#4c4e4d]"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => updateRole(account)}
+                              disabled={
+                                updatingAccountId === account.id ||
+                                (roleDrafts[account.id] ?? account.role) ===
+                                  account.role
+                              }
+                              className="rounded-md border border-[#cfd8d3] px-3 py-2 text-xs font-semibold text-[#44504a] hover:bg-[#f5f7f5] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              Save role
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => deleteAccount(account)}
+                              disabled={
+                                updatingAccountId === account.id ||
+                                account.id === admin.id
+                              }
+                              aria-label={`Delete ${account.username}`}
+                              className="inline-flex items-center gap-1.5 rounded-md border border-[#efc9c5] px-3 py-2 text-xs font-semibold text-[#a12d24] hover:bg-[#fff5f4] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <Trash2 className="size-3.5" aria-hidden="true" />
+                              Delete
+                            </button>
+                          </>
+                        ) : (
+                          <span
+                            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${roleStyle[account.role]}`}
+                          >
+                            {roleLabel[account.role]}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
               </ul>
             )}
           </div>
@@ -220,7 +376,7 @@ function CreateAdminDialog({
             className="-mr-2 -mt-2 grid size-9 place-items-center rounded-md text-xl text-[#68736e] hover:bg-[#edf1ee] disabled:opacity-50"
             aria-label="Close"
           >
-            &times;
+            <X size={20} />
           </button>
         </div>
         <form
@@ -249,18 +405,26 @@ function CreateAdminDialog({
             />
           </Field>
           <Field label="Role" htmlFor="admin-role">
-            <select
-              id="admin-role"
-              name="role"
-              defaultValue="manager"
-              className={inputClass}
-            >
-              {(["super_admin", "manager", "observer"] as const).map((role) => (
-                <option key={role} value={role}>
-                  {roleLabel[role]}
-                </option>
-              ))}
-            </select>
+            <div className="relative mt-2">
+              <select
+                id="admin-role"
+                name="role"
+                defaultValue="manager"
+                className="block w-full appearance-none rounded-md border border-[#cdd8d2] bg-white py-2.5 pl-3 pr-10 text-sm text-[#303934] outline-none focus:border-[#1b6a5d] focus:ring-2 focus:ring-[#1b6a5d]/20"
+              >
+                {(["super_admin", "manager", "observer"] as const).map(
+                  (role) => (
+                    <option key={role} value={role}>
+                      {roleLabel[role]}
+                    </option>
+                  ),
+                )}
+              </select>
+              <ChevronDown
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-[#4c4e4d]"
+              />
+            </div>
           </Field>
           <Field label="Temporary password" htmlFor="admin-password">
             <div className="relative">
@@ -319,6 +483,39 @@ function CreateAdminDialog({
 
 const inputClass =
   "mt-2 block w-full rounded-md border border-[#cdd8d2] bg-white px-3 py-2.5 text-sm text-[#303934] outline-none focus:border-[#1b6a5d] focus:ring-2 focus:ring-[#1b6a5d]/20";
+
+function VerifiedBadge({ role }: { role: Role }) {
+  const color =
+    role === "super_admin"
+      ? "#d4a017"
+      : role === "manager"
+        ? "#9aa4ad"
+        : "#1d9bf0";
+
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="size-4 shrink-0"
+      role="img"
+      aria-label={`${roleLabel[role]} verified`}
+    >
+      <title>{`${roleLabel[role]} verified`}</title>
+      <path
+        fill={color}
+        d="m12 1.75 2.5 1.4 2.86-.2 1.18 2.62 2.57 1.28-.52 2.82L22 12l-1.41 2.33.2 2.86-2.62 1.18-1.28 2.57-2.82-.52L12 22l-2.33-1.41-2.86.2-1.18-2.62-2.57-1.28.52-2.82L2 12l1.41-2.33-.2-2.86 2.62-1.18 1.28-2.57 2.82.52L12 1.75Z"
+      />
+      <path
+        d="m8.1 12.2 2.45 2.4 5.35-5.4"
+        fill="none"
+        stroke="white"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
 function EyeIcon() {
   return (
     <svg
