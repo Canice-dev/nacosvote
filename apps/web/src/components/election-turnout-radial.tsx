@@ -8,12 +8,7 @@ import {
   RadialBarChart,
 } from "recharts";
 
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   ChartContainer,
   ChartTooltip,
@@ -59,7 +54,7 @@ export function ElectionTurnoutRadial({
       <CardContent className="flex items-center px-3 pb-2">
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square w-full max-w-[190px]"
+          className="mx-auto aspect-square w-full max-w-47.5"
         >
           <RadialBarChart
             data={chartData}
@@ -85,13 +80,13 @@ export function ElectionTurnoutRadial({
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
             />
-              <PolarAngleAxis
-                type="number"
-                domain={[0, Math.max(eligibleStudents, 1)]}
-                tick={false}
-                tickLine={false}
-                axisLine={false}
-              />
+            <PolarAngleAxis
+              type="number"
+              domain={[0, Math.max(eligibleStudents, 1)]}
+              tick={false}
+              tickLine={false}
+              axisLine={false}
+            />
             <PolarRadiusAxis tick={false} tickLine={false} axisLine={false}>
               <Label
                 content={({ viewBox }) => {
@@ -160,7 +155,7 @@ export function OtpVerificationRadial({
       <CardContent className="flex items-center px-3 pb-2">
         <ChartContainer
           config={otpChartConfig}
-          className="mx-auto aspect-square w-full max-w-[190px]"
+          className="mx-auto aspect-square w-full max-w-47.5"
         >
           <RadialBarChart
             data={chartData}
