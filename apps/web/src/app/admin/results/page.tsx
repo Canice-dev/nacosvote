@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { ResultsPositionChart } from "@/components/results-position-chart";
 import { db } from "@/db";
 import {
   ballotVotes,
@@ -79,6 +80,7 @@ export default async function ResultsPage() {
       positionName: positions.name,
       candidateId: candidates.id,
       candidateName: candidates.fullName,
+      candidateImageUrl: candidates.imageUrl,
       votes: count(ballotVotes.candidateId),
     })
     .from(positions)
@@ -101,7 +103,12 @@ export default async function ResultsPage() {
     string,
     {
       name: string;
-      candidates: Array<{ id: string; name: string; votes: number }>;
+      candidates: Array<{
+        id: string;
+        name: string;
+        imageUrl: string | null;
+        votes: number;
+      }>;
     }
   >();
   for (const row of rows) {
@@ -112,6 +119,7 @@ export default async function ResultsPage() {
     position.candidates.push({
       id: row.candidateId,
       name: row.candidateName,
+      imageUrl: row.candidateImageUrl,
       votes: Number(row.votes),
     });
     results.set(row.positionId, position);
@@ -142,40 +150,12 @@ export default async function ResultsPage() {
             {totalBallots}
           </p>
         </div>
-        {[...results.values()].map((position) => (
-          <section key={position.name} className="bg-white p-6">
-            <h2 className="text-xl font-semibold text-[#292d2b]">
-              {position.name}
-            </h2>
-            <div className="mt-5 space-y-4">
-              {position.candidates.map((candidate, index) => {
-                const percentage =
-                  totalBallots > 0
-                    ? Math.round((candidate.votes / totalBallots) * 100)
-                    : 0;
-                return (
-                  <div key={candidate.id}>
-                    <div className="flex justify-between gap-4 text-sm">
-                      <span className="font-medium text-[#39413e]">
-                        {index === 0 && candidate.votes > 0 ? "Leading — " : ""}
-                        {candidate.name}
-                      </span>
-                      <span className="font-semibold text-[#174e46]">
-                        {candidate.votes} vote{candidate.votes === 1 ? "" : "s"}{" "}
-                        · {percentage}%
-                      </span>
-                    </div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#e7ece9]">
-                      <div
-                        className="h-full rounded-full bg-[#16806b]"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+        {[...results.entries()].map(([positionId, position]) => (
+          <ResultsPositionChart
+            key={positionId}
+            name={position.name}
+            candidates={position.candidates}
+          />
         ))}
       </div>
     </ResultsShell>
