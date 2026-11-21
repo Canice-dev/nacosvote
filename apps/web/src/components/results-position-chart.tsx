@@ -47,8 +47,14 @@ export function ResultsPositionChart({
   name,
   candidates,
 }: ResultsPositionChartProps) {
-  const totalVotes = candidates.reduce((total, candidate) => total + candidate.votes, 0);
-  const leaderVotes = Math.max(0, ...candidates.map((candidate) => candidate.votes));
+  const totalVotes = candidates.reduce(
+    (total, candidate) => total + candidate.votes,
+    0,
+  );
+  const leaderVotes = Math.max(
+    0,
+    ...candidates.map((candidate) => candidate.votes),
+  );
   const leaders = new Set(
     candidates
       .filter((candidate) => leaderVotes > 0 && candidate.votes === leaderVotes)
@@ -79,7 +85,8 @@ export function ResultsPositionChart({
           {name}
         </CardTitle>
         <CardDescription className="text-sm text-[#727975]">
-          {resultSummary} · {totalVotes} vote{totalVotes === 1 ? "" : "s"} counted
+          {resultSummary} · {totalVotes} vote{totalVotes === 1 ? "" : "s"}{" "}
+          counted
         </CardDescription>
       </CardHeader>
       <CardContent className="px-5 py-5 sm:px-6">
@@ -97,7 +104,7 @@ export function ResultsPositionChart({
               return (
                 <div
                   key={candidate.id}
-                  className="flex h-[66px] items-center gap-5"
+                  className="flex h-16.5 items-center gap-5"
                   title={candidate.name}
                 >
                   <div

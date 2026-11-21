@@ -1,6 +1,10 @@
-import { and, asc, count, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull } from "drizzle-orm";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
+import {
+  ElectionTurnoutRadial,
+  OtpVerificationRadial,
+} from "@/components/election-turnout-radial";
 import { ResultsPositionChart } from "@/components/results-position-chart";
 import { db } from "@/db";
 import {
@@ -8,7 +12,9 @@ import {
   ballots,
   candidates,
   elections,
+  otpChallenges,
   positions,
+  studentEligibility,
 } from "@/db/schema";
 import { requireAdmin } from "@/lib/admin-session";
 
@@ -69,11 +75,38 @@ export default async function ResultsPage() {
       </ResultsShell>
     );
 
-  const [ballotCount] = await db
-    .select({ total: count() })
-    .from(ballots)
-    .where(eq(ballots.electionId, election.id));
+  const [[ballotCount], [eligibleCount], verifiedStudents] = await Promise.all([
+    db
+      .select({ total: count() })
+      .from(ballots)
+      .where(eq(ballots.electionId, election.id)),
+    db
+      .select({ total: count() })
+      .from(studentEligibility)
+      .where(
+        and(
+          eq(studentEligibility.electionId, election.id),
+          inArray(studentEligibility.status, ["eligible", "voted"]),
+        ),
+      ),
+    db
+      .selectDistinct({ eligibilityId: otpChallenges.eligibilityId })
+      .from(otpChallenges)
+      .innerJoin(
+        studentEligibility,
+        eq(otpChallenges.eligibilityId, studentEligibility.id),
+      )
+      .where(
+        and(
+          eq(studentEligibility.electionId, election.id),
+          inArray(studentEligibility.status, ["eligible", "voted"]),
+          isNotNull(otpChallenges.verifiedAt),
+        ),
+      ),
+  ]);
   const totalBallots = Number(ballotCount?.total ?? 0);
+  const totalEligible = Number(eligibleCount?.total ?? 0);
+  const totalOtpVerified = verifiedStudents.length;
   const rows = await db
     .select({
       positionId: positions.id,
@@ -127,7 +160,7 @@ export default async function ResultsPage() {
 
   return (
     <ResultsShell admin={admin}>
-      <div className="flex flex-col justify-between gap-5 border-b border-[#e5e6e2] pb-7 sm:flex-row sm:items-end">
+      <div className="flex flex-col justify-between gap-5 pb-7 sm:flex-row sm:items-end">
         <div>
           <p className="text-sm font-medium text-[#707773]">Results</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-[-0.04em] text-[#292d2b] sm:text-[34px]">
@@ -141,15 +174,17 @@ export default async function ResultsPage() {
           {election.state === "published" ? "Published" : "Election closed"}
         </span>
       </div>
-      <div className="mt-7 grid gap-5">
-        <div className="bg-[#f2faf6] p-6">
-          <p className="text-sm font-medium text-[#58716b]">
-            Total ballots submitted
-          </p>
-          <p className="mt-2 text-4xl font-semibold tracking-[-0.04em] text-[#174e46]">
-            {totalBallots}
-          </p>
-        </div>
+      <div className="mt-7 grid gap-4 sm:grid-cols-2">
+        <ElectionTurnoutRadial
+          eligibleStudents={totalEligible}
+          ballotsCast={totalBallots}
+        />
+        <OtpVerificationRadial
+          otpVerified={totalOtpVerified}
+          ballotsCast={totalBallots}
+        />
+      </div>
+      <div className="mt-5 grid gap-5">
         {[...results.entries()].map(([positionId, position]) => (
           <ResultsPositionChart
             key={positionId}
