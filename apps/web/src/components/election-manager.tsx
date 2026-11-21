@@ -36,14 +36,18 @@ export function ElectionManager({
   admin,
 }: {
   initialElections: Election[];
-  admin: { username: string; email: string; initials: string };
+  admin: { username: string; email: string; initials: string; role: string };
 }) {
   const [elections, setElections] = useState(initialElections);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [publishingId, setPublishingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [electionToDelete, setElectionToDelete] = useState<Election | null>(
+    null,
+  );
+  const [electionToPublish, setElectionToPublish] = useState<Election | null>(
     null,
   );
 
@@ -78,6 +82,38 @@ export function ElectionManager({
       );
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  async function publishElection(election: Election) {
+    setPublishingId(election.id);
+    setNotice("");
+    try {
+      const response = await fetch(
+        `/api/admin/elections/${election.id}/publish`,
+        { method: "POST" },
+      );
+      const result = (await response.json()) as {
+        message?: string;
+        election?: Election;
+      };
+      if (!response.ok || !result.election) {
+        setNotice(result.message ?? "Unable to publish the election results.");
+        return;
+      }
+      setElections((current) =>
+        current.map((item) =>
+          item.id === election.id ? result.election! : item,
+        ),
+      );
+      setElectionToPublish(null);
+      setNotice(`${election.title} results have been marked as published.`);
+    } catch {
+      setNotice(
+        "Unable to publish the election results. Check your connection and try again.",
+      );
+    } finally {
+      setPublishingId(null);
     }
   }
 
@@ -187,6 +223,20 @@ export function ElectionManager({
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-3">
+                        {election.state === "closed" &&
+                          (admin.role === "manager" ||
+                            admin.role === "super_admin") && (
+                          <button
+                            type="button"
+                            onClick={() => setElectionToPublish(election)}
+                            disabled={publishingId === election.id}
+                            className="rounded-xl bg-[#0f5a50] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#0b493f] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {publishingId === election.id
+                              ? "Publishing..."
+                              : "Publish results"}
+                          </button>
+                        )}
                         <label className="flex items-center gap-3 text-sm font-medium text-[#4c5752]">
                           Status
                           <span className="relative">
@@ -195,6 +245,7 @@ export function ElectionManager({
                               disabled={
                                 election.state === "published" ||
                                 updatingId === election.id ||
+                                publishingId === election.id ||
                                 deletingId === election.id
                               }
                               onChange={(event) =>
@@ -222,22 +273,25 @@ export function ElectionManager({
                             />
                           </span>
                         </label>
-                        <button
-                          type="button"
-                          onClick={() => setElectionToDelete(election)}
-                          disabled={
-                            updatingId === election.id ||
-                            deletingId === election.id
-                          }
-                          className="rounded-xl border border-[#EF4444] px-3 py-2 text-sm font-semibold text-[#EF4444] transition hover:bg-[#fff3f0] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          <span className="inline-flex items-center gap-1.5">
-                            <Trash className="size-4" />
-                            {deletingId === election.id
-                              ? "Deleting..."
-                              : "Delete"}
-                          </span>
-                        </button>
+                        {election.state !== "published" && (
+                          <button
+                            type="button"
+                            onClick={() => setElectionToDelete(election)}
+                            disabled={
+                              updatingId === election.id ||
+                              publishingId === election.id ||
+                              deletingId === election.id
+                            }
+                            className="rounded-xl border border-[#EF4444] px-3 py-2 text-sm font-semibold text-[#EF4444] transition hover:bg-[#fff3f0] disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            <span className="inline-flex items-center gap-1.5">
+                              <Trash className="size-4" />
+                              {deletingId === election.id
+                                ? "Deleting..."
+                                : "Delete"}
+                            </span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </li>
@@ -267,7 +321,83 @@ export function ElectionManager({
           onConfirm={() => deleteElection(electionToDelete)}
         />
       )}
+      {electionToPublish && (
+        <PublishElectionDialog
+          election={electionToPublish}
+          isPublishing={publishingId === electionToPublish.id}
+          onClose={() => setElectionToPublish(null)}
+          onConfirm={() => publishElection(electionToPublish)}
+        />
+      )}
     </main>
+  );
+}
+
+function PublishElectionDialog({
+  election,
+  isPublishing,
+  onClose,
+  onConfirm,
+}: {
+  election: Election;
+  isPublishing: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-60 grid place-items-center p-4"
+      role="presentation"
+    >
+      <button
+        type="button"
+        aria-label="Close publish results dialog"
+        onClick={onClose}
+        disabled={isPublishing}
+        className="absolute inset-0 bg-[#15231f]/45"
+      />
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="publish-election-title"
+        aria-describedby="publish-election-description"
+        className="relative w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+      >
+        <h2
+          id="publish-election-title"
+          className="text-xl font-semibold tracking-[-0.02em] text-[#29332f]"
+        >
+          Mark results as published?
+        </h2>
+        <p
+          id="publish-election-description"
+          className="mt-3 text-sm leading-6 text-[#626d67]"
+        >
+          This will mark the final results for{" "}
+          <span className="font-semibold text-[#303a35]">{election.title}</span>
+          as published. The election will become read-only, and this action cannot be
+          undone.
+        </p>
+        <div className="mt-7 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isPublishing}
+            className="rounded-xl border border-[#cfd8d3] px-4 py-2.5 text-sm font-semibold text-[#44504a] hover:bg-[#f5f7f5] disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={isPublishing}
+            className="rounded-xl bg-[#0f5a50] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0b493f] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isPublishing ? "Publishing..." : "Publish results"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

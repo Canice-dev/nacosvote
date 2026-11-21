@@ -20,7 +20,7 @@ export default async function ElectionSetupPage() {
   return (
     <ElectionManager
       initialElections={existingElections}
-      admin={{ username: admin.username, email: admin.email, initials: admin.username.slice(0, 2).toUpperCase() }}
+      admin={{ username: admin.username, email: admin.email, initials: admin.username.slice(0, 2).toUpperCase(), role: admin.role }}
     />
   );
 }

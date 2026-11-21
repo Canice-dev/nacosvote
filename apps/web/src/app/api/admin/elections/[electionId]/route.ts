@@ -160,9 +160,12 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   }
 
   const { electionId } = await params;
-  const [existing] = await db.select({ id: elections.id, title: elections.title })
+  const [existing] = await db.select({ id: elections.id, title: elections.title, state: elections.state })
     .from(elections).where(eq(elections.id, electionId)).limit(1);
   if (!existing) return NextResponse.json({ message: "Election not found." }, { status: 404 });
+  if (existing.state === "published") {
+    return NextResponse.json({ message: "A published election cannot be deleted." }, { status: 409 });
+  }
 
   try {
     await db.delete(elections).where(eq(elections.id, electionId));

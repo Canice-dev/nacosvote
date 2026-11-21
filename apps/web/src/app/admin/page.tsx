@@ -237,6 +237,7 @@ function getActivityTitle(action: string) {
     "candidate.created": "Candidate added",
     "election.created": "Election created",
     "election.deleted": "Election deleted",
+    "election.published": "Election results published",
     "election.schedule_updated": "Election schedule updated",
     "election.status_changed": "Election status changed",
     "position.created": "Position added",
