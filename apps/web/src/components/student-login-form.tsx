@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type Step = "matric" | "otp";
@@ -185,10 +186,18 @@ export function StudentLoginForm() {
         </p>
       )}
 
-      <div className="mt-7 border-t border-[#e4ece8] pt-5">
-        <p className="text-xs leading-5 text-[#708a84]">
-          We use your registered school email only to verify eligibility. We do
-          not store your identity with your ballot choices.
+      <div className="mt-7 pt-5">
+        <p className="mb-3 text-xs leading-5 text-[#708a84]">
+          By continuing, you confirm you have read our{" "}
+          <Link
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-[#176353] underline underline-offset-2 hover:text-[#0e5a4f]"
+          >
+            Privacy Notice
+          </Link>
+          .
         </p>
       </div>
     </section>
