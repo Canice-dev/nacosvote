@@ -237,6 +237,7 @@ function getActivityTitle(action: string) {
     "candidate.created": "Candidate added",
     "election.created": "Election created",
     "election.deleted": "Election deleted",
+    "election.auto_closed": "Election closed automatically",
     "election.published": "Election results published",
     "election.schedule_updated": "Election schedule updated",
     "election.status_changed": "Election status changed",
@@ -252,7 +253,9 @@ function getActivityTitle(action: string) {
 }
 
 function getActivityDetail(activity: AuditActivity) {
-  return activity.actorUsername ? "By " + activity.actorUsername : "By an administrator";
+  return activity.actorUsername
+    ? "By " + activity.actorUsername
+    : "Automatic system action";
 }
 
 function getActivityIcon(action: string): IconName {

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { adminAuditEvents, elections } from "@/db/schema";
 import { getAdminSession } from "@/lib/admin-session";
+import { parseDateTimeInTimezone } from "@/lib/election-datetime";
 
 const allowedStates = ["draft", "scheduled", "open", "closed"] as const;
 type ElectionState = (typeof allowedStates)[number];
@@ -93,62 +94,6 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     }
     console.error("Unable to update election status.", error);
     return NextResponse.json({ message: "Unable to update the election status. Please try again." }, { status: 500 });
-  }
-}
-
-function parseDateTimeInTimezone(value: string, timezone: string) {
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
-  if (!match) return null;
-  const [, yearText, monthText, dayText, hourText, minuteText] = match;
-  const [year, month, day, hour, minute] = [yearText, monthText, dayText, hourText, minuteText].map(Number);
-  const targetUtc = Date.UTC(year, month - 1, day, hour, minute);
-  const targetDate = new Date(targetUtc);
-  if (
-    targetDate.getUTCFullYear() !== year ||
-    targetDate.getUTCMonth() !== month - 1 ||
-    targetDate.getUTCDate() !== day ||
-    hour > 23 ||
-    minute > 59
-  ) return null;
-
-  try {
-    const formatter = new Intl.DateTimeFormat("en-US-u-ca-gregory", {
-      timeZone: timezone,
-      year: "numeric",
-      month: "numeric",
-      day: "numeric",
-      hour: "numeric",
-      minute: "numeric",
-      hourCycle: "h23",
-    });
-    let utcGuess = targetUtc;
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      const parts = Object.fromEntries(
-        formatter.formatToParts(new Date(utcGuess)).map(({ type, value }) => [type, value]),
-      );
-      const localAsUtc = Date.UTC(
-        Number(parts.year),
-        Number(parts.month) - 1,
-        Number(parts.day),
-        Number(parts.hour),
-        Number(parts.minute),
-      );
-      const nextGuess = utcGuess + targetUtc - localAsUtc;
-      if (nextGuess === utcGuess) break;
-      utcGuess = nextGuess;
-    }
-    const resolved = new Date(utcGuess);
-    const result = Object.fromEntries(
-      formatter.formatToParts(resolved).map(({ type, value }) => [type, value]),
-    );
-    if (
-      Number(result.year) !== year || Number(result.month) !== month ||
-      Number(result.day) !== day || Number(result.hour) !== hour ||
-      Number(result.minute) !== minute
-    ) return null;
-    return resolved;
-  } catch {
-    return null;
   }
 }
 

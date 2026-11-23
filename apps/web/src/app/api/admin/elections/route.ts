@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { adminAuditEvents, elections } from "@/db/schema";
 import { getAdminSession } from "@/lib/admin-session";
+import { parseDateTimeInTimezone } from "@/lib/election-datetime";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,15 +60,21 @@ function parseElection(body: Record<string, unknown>) {
   const title = typeof body.title === "string" ? body.title.trim() : "";
   const timezone = typeof body.timezone === "string" ? body.timezone.trim() : "";
   const state = body.state as ElectionState;
-  const startsAt = typeof body.startsAt === "string" ? new Date(body.startsAt) : new Date("");
-  const endsAt = typeof body.endsAt === "string" ? new Date(body.endsAt) : new Date("");
+  const startsAt =
+    typeof body.startsAt === "string"
+      ? parseDateTimeInTimezone(body.startsAt, timezone)
+      : null;
+  const endsAt =
+    typeof body.endsAt === "string"
+      ? parseDateTimeInTimezone(body.endsAt, timezone)
+      : null;
 
   if (!departmentName || departmentName.length > 160) return { message: "Enter a department name of up to 160 characters." };
   if (!title || title.length > 160) return { message: "Enter an election title of up to 160 characters." };
   if (!timezone || timezone.length > 100) return { message: "Enter a valid timezone." };
   if (!allowedStates.includes(state)) return { message: "Select a valid election status." };
-  if (Number.isNaN(startsAt.getTime()) || Number.isNaN(endsAt.getTime()) || endsAt <= startsAt) {
-    return { message: "The closing date and time must be after the opening date and time." };
+  if (!startsAt || !endsAt || endsAt <= startsAt) {
+    return { message: "Enter valid election dates and times in the selected timezone, with the closing time after the opening time." };
   }
   return { departmentName, title, timezone, state, startsAt, endsAt };
 }
