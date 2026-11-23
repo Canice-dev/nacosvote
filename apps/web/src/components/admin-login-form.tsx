@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export function AdminLoginForm() {
@@ -80,6 +81,14 @@ export function AdminLoginForm() {
       >
         {isSubmitting ? "Signing in..." : "Sign in to dashboard"}
       </button>
+      <div className="text-right">
+        <Link
+          href="/admin/forgot-password"
+          className="text-sm font-medium text-[#315954] underline-offset-4 hover:text-[#0e5a4f] hover:underline"
+        >
+          Forgot password?
+        </Link>
+      </div>
       {message && (
         <p
           className="rounded-xl bg-[#fff1ee] px-3 py-2.5 text-sm leading-5 text-[#984431]"

@@ -5,9 +5,18 @@ import { sql } from "drizzle-orm";
 import { db } from "@/db";
 
 type RateLimitOptions = {
-  scopeType: "student_matric" | "admin_identifier" | "client_ip";
+  scopeType:
+    | "student_matric"
+    | "admin_identifier"
+    | "admin_reset_token"
+    | "client_ip";
   value: string;
-  action: "student_otp_start" | "student_otp_verify" | "admin_login";
+  action:
+    | "student_otp_start"
+    | "student_otp_verify"
+    | "admin_login"
+    | "admin_password_reset_request"
+    | "admin_password_reset_complete";
   maxAttempts: number;
   windowSeconds: number;
   cooldownSeconds: number;

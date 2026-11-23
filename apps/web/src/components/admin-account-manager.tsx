@@ -569,8 +569,8 @@ function VerifiedBadge({ role }: { role: Role }) {
     role === "super_admin"
       ? "#d4a017"
       : role === "manager"
-        ? "#9aa4ad"
-        : "#1d9bf0";
+        ? "#1d9bf0"
+        : "#9aa4ad";
 
   return (
     <svg
