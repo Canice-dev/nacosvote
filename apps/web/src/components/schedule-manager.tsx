@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CalendarClock,
   Check,
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { ElectionExpiryRefresh } from "@/components/election-expiry-refresh";
 
 type ElectionState = "draft" | "scheduled" | "open" | "closed" | "published";
 type Election = {
@@ -56,6 +57,8 @@ export function ScheduleManager({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
+
+  useEffect(() => setElections(initialElections), [initialElections]);
 
   async function changeState(id: string, state: ElectionState) {
     setUpdatingId(id);
@@ -143,6 +146,7 @@ export function ScheduleManager({
 
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-[#282a2a]">
+      <ElectionExpiryRefresh elections={elections} />
       <AdminSidebar {...admin} />
       <div className="transition-[padding] duration-200 lg:pl-(--admin-sidebar-width)">
         <section className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">

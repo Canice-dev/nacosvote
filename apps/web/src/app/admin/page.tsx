@@ -2,7 +2,9 @@ import { and, count, desc, eq, gte, lt, ne, sql } from "drizzle-orm";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { ElectionCountdown } from "@/components/election-countdown";
+import { ElectionExpiryRefresh } from "@/components/election-expiry-refresh";
 import { db } from "@/db";
+import { closeExpiredElections } from "@/lib/close-expired-elections";
 import {
   ballots,
   adminAuditEvents,
@@ -304,6 +306,7 @@ function formatElectionDate(date: Date | null, timezone: string) {
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin();
+  await closeExpiredElections();
   const now = new Date();
   const [openElections, latestElections, recentActivities] = await Promise.all([
     db
@@ -461,6 +464,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-[#282a2a]">
+      <ElectionExpiryRefresh elections={openElection ? [openElection] : []} />
       <AdminSidebar
         username={admin.username}
         email={admin.email}

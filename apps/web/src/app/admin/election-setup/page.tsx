@@ -3,10 +3,12 @@ import { desc } from "drizzle-orm";
 import { ElectionManager } from "@/components/election-manager";
 import { db } from "@/db";
 import { elections } from "@/db/schema";
+import { closeExpiredElections } from "@/lib/close-expired-elections";
 import { requireAdmin } from "@/lib/admin-session";
 
 export default async function ElectionSetupPage() {
   const admin = await requireAdmin();
+  await closeExpiredElections();
   const existingElections = await db.select({
     id: elections.id,
     departmentName: elections.departmentName,

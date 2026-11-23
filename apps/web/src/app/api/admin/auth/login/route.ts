@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 
 import { db } from "@/db";
 import { adminSessions, admins } from "@/db/schema";
+import { consumeAuthRateLimit, getClientAddress } from "@/lib/auth-rate-limit";
 
 const scrypt = promisify(scryptCallback);
 const INVALID_CREDENTIALS_MESSAGE = "Invalid username or password.";
@@ -45,6 +46,36 @@ export async function POST(request: Request) {
   }
 
   try {
+    const ipLimit = await consumeAuthRateLimit({
+      scopeType: "client_ip",
+      value: getClientAddress(request),
+      action: "admin_login",
+      maxAttempts: 20,
+      windowSeconds: 15 * 60,
+      cooldownSeconds: 15 * 60,
+    });
+    if (!ipLimit.allowed) {
+      return Response.json(
+        { message: INVALID_CREDENTIALS_MESSAGE },
+        { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const identifierLimit = await consumeAuthRateLimit({
+      scopeType: "admin_identifier",
+      value: identifier.toLowerCase(),
+      action: "admin_login",
+      maxAttempts: 10,
+      windowSeconds: 15 * 60,
+      cooldownSeconds: 15 * 60,
+    });
+    if (!identifierLimit.allowed) {
+      return Response.json(
+        { message: INVALID_CREDENTIALS_MESSAGE },
+        { status: 429, headers: { "Retry-After": String(identifierLimit.retryAfterSeconds) } },
+      );
+    }
+
     const [admin] = await db
       .select({ id: admins.id, passwordHash: admins.passwordHash })
       .from(admins)

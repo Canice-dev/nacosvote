@@ -35,6 +35,12 @@ export default function Home() {
                 </div>
               ))}
             </div>
+            <a
+              href="/results"
+              className="mt-8 inline-flex text-sm font-semibold text-[#176353] underline-offset-4 hover:text-[#0e5a4f] hover:underline"
+            >
+              View published election results
+            </a>
           </div>
 
           <StudentLoginForm />

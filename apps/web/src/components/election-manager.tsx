@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
+import { ElectionExpiryRefresh } from "@/components/election-expiry-refresh";
 import { ChevronDown, Trash, TriangleAlert, X } from "lucide-react";
 
 type ElectionState = "draft" | "scheduled" | "open" | "closed" | "published";
@@ -50,6 +51,8 @@ export function ElectionManager({
   const [electionToPublish, setElectionToPublish] = useState<Election | null>(
     null,
   );
+
+  useEffect(() => setElections(initialElections), [initialElections]);
 
   async function updateState(id: string, state: ElectionState) {
     setUpdatingId(id);
@@ -148,6 +151,7 @@ export function ElectionManager({
 
   return (
     <main className="min-h-screen bg-[#fbfbfa] text-[#282a2a]">
+      <ElectionExpiryRefresh elections={elections} />
       <AdminSidebar {...admin} />
       <div className="lg:pl-(--admin-sidebar-width) transition-[padding] duration-200">
         <section className="mx-auto max-w-330 px-5 py-9 sm:px-8 lg:px-12">

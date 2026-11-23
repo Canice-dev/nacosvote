@@ -15,6 +15,7 @@ import {
   otpChallenges,
   studentEligibility,
 } from "@/db/schema";
+import { consumeAuthRateLimit, getClientAddress } from "@/lib/auth-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +57,36 @@ export async function POST(request: Request) {
   const now = new Date();
 
   try {
+    const ipLimit = await consumeAuthRateLimit({
+      scopeType: "client_ip",
+      value: getClientAddress(request),
+      action: "student_otp_verify",
+      maxAttempts: 60,
+      windowSeconds: 15 * 60,
+      cooldownSeconds: 15 * 60,
+    });
+    if (!ipLimit.allowed) {
+      return Response.json(
+        { message: INVALID_CODE_MESSAGE },
+        { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const matricLimit = await consumeAuthRateLimit({
+      scopeType: "student_matric",
+      value: matricNumber,
+      action: "student_otp_verify",
+      maxAttempts: 10,
+      windowSeconds: 15 * 60,
+      cooldownSeconds: 15 * 60,
+    });
+    if (!matricLimit.allowed) {
+      return Response.json(
+        { message: INVALID_CODE_MESSAGE },
+        { status: 429, headers: { "Retry-After": String(matricLimit.retryAfterSeconds) } },
+      );
+    }
+
     const [election] = await db
       .select({ id: elections.id, endsAt: elections.endsAt })
       .from(elections)
@@ -76,7 +107,6 @@ export async function POST(request: Request) {
       .select({
         id: otpChallenges.id,
         otpHash: otpChallenges.otpHash,
-        failedAttempts: otpChallenges.failedAttempts,
         eligibilityId: studentEligibility.id,
         votedAt: studentEligibility.votedAt,
       })
@@ -110,14 +140,16 @@ export async function POST(request: Request) {
     );
 
     if (!isValid) {
-      const failedAttempts = challenge.failedAttempts + 1;
-      await db
-        .update(otpChallenges)
-        .set({
-          failedAttempts,
-          consumedAt: failedAttempts >= 5 ? now : undefined,
-        })
-        .where(eq(otpChallenges.id, challenge.id));
+      await db.execute(sql`
+        update otp_challenges
+        set failed_attempts = failed_attempts + 1,
+            consumed_at = case
+              when failed_attempts + 1 >= 5 then ${now}
+              else consumed_at
+            end
+        where id = ${challenge.id}
+          and consumed_at is null
+      `);
 
       return Response.json({ message: INVALID_CODE_MESSAGE }, { status: 401 });
     }

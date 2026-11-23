@@ -7,6 +7,7 @@ import {
 } from "@/components/election-turnout-radial";
 import { ResultsPositionChart } from "@/components/results-position-chart";
 import { db } from "@/db";
+import { closeExpiredElections } from "@/lib/close-expired-elections";
 import {
   ballotVotes,
   ballots,
@@ -44,6 +45,7 @@ function ResultsShell({
 
 export default async function ResultsPage() {
   const signedInAdmin = await requireAdmin();
+  await closeExpiredElections();
   const admin = {
     ...signedInAdmin,
     initials: signedInAdmin.username.slice(0, 2).toUpperCase(),

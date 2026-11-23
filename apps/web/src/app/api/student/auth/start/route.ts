@@ -5,6 +5,7 @@ import { Resend } from "resend";
 
 import { db } from "@/db";
 import { elections, otpChallenges, studentEligibility } from "@/db/schema";
+import { consumeAuthRateLimit, getClientAddress } from "@/lib/auth-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -84,6 +85,36 @@ export async function POST(request: Request) {
   const now = new Date();
 
   try {
+    const ipLimit = await consumeAuthRateLimit({
+      scopeType: "client_ip",
+      value: getClientAddress(request),
+      action: "student_otp_start",
+      maxAttempts: 20,
+      windowSeconds: 15 * 60,
+      cooldownSeconds: 15 * 60,
+    });
+    if (!ipLimit.allowed) {
+      return Response.json(
+        { message: "Too many sign-in requests. Please wait before trying again." },
+        { status: 429, headers: { "Retry-After": String(ipLimit.retryAfterSeconds) } },
+      );
+    }
+
+    const matricLimit = await consumeAuthRateLimit({
+      scopeType: "student_matric",
+      value: matricNumber,
+      action: "student_otp_start",
+      maxAttempts: 3,
+      windowSeconds: 15 * 60,
+      cooldownSeconds: 15 * 60,
+    });
+    if (!matricLimit.allowed) {
+      return Response.json(
+        { message: "Too many sign-in requests. Please wait before trying again." },
+        { status: 429, headers: { "Retry-After": String(matricLimit.retryAfterSeconds) } },
+      );
+    }
+
     const [election] = await db
       .select({ id: elections.id })
       .from(elections)
