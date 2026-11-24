@@ -1,6 +1,7 @@
 import { createHmac, randomInt } from "node:crypto";
 
 import { and, eq, gt, isNull, lte, ne } from "drizzle-orm";
+import * as Sentry from "@sentry/nextjs";
 import { Resend } from "resend";
 
 import { db } from "@/db";
@@ -191,6 +192,9 @@ export async function POST(request: Request) {
       );
 
       if (error) {
+        Sentry.captureException(error, {
+          tags: { area: "student-auth", operation: "send-otp-email" },
+        });
         await db
           .update(otpChallenges)
           .set({ consumedAt: new Date() })
@@ -202,6 +206,9 @@ export async function POST(request: Request) {
         );
       }
     } catch (error) {
+      Sentry.captureException(error, {
+        tags: { area: "student-auth", operation: "send-otp-email" },
+      });
       await db
         .update(otpChallenges)
         .set({ consumedAt: new Date() })
