@@ -1,4 +1,5 @@
 import { and, asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
+import * as Sentry from "@sentry/nextjs";
 import * as XLSX from "xlsx";
 
 import { db } from "@/db";
@@ -195,6 +196,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
       },
     });
   } catch (error) {
+    Sentry.captureException(error, {
+      tags: { area: "admin-reports", operation: "generate-election-report" },
+    });
     console.error("Unable to generate final election report.", error);
     return Response.json(
       { message: "Unable to generate the final election report. Please try again." },
