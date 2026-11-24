@@ -2,6 +2,34 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+.admin-navigation-scroll {
+  scrollbar-color: #cbd5d0 transparent;
+  scrollbar-width: thin;
+}
+
+.admin-navigation-scroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.admin-navigation-scroll::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.admin-navigation-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.admin-navigation-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: #cbd5d0;
+}
+
+.admin-navigation-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9ca9a2;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

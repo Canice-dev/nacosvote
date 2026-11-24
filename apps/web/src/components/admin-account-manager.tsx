@@ -177,8 +177,8 @@ export function AdminAccountManager({
               {actionError}
             </p>
           )}
-          <div className="mt-7 overflow-hidden rounded-lg border border-[#e1e6e2] bg-white">
-            <div className="border-b border-[#e9ece9] px-5 py-4">
+          <div className="mt-7 overflow-hidden rounded-2xl bg-white">
+            <div className="px-5 py-4">
               <h2 className="text-base font-semibold text-[#34403b]">
                 All administrators
               </h2>
@@ -188,7 +188,7 @@ export function AdminAccountManager({
                 No active administrator accounts exist.
               </p>
             ) : (
-              <ul className="divide-y divide-[#edf0ed]">
+              <ul>
                 {accounts
                   .filter((account) => account.isActive)
                   .map((account) => (
@@ -197,16 +197,16 @@ export function AdminAccountManager({
                       className="flex flex-col justify-between gap-3 px-5 py-4 sm:flex-row sm:items-center"
                     >
                       <div className="flex min-w-0 items-center gap-3">
-                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#e84e3c] text-xs font-medium text-white">
+                        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#e84e3c] text-xs font-medium text-white">
                           {account.username.slice(0, 2).toUpperCase()}
                         </span>
                         <div className="min-w-0">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          <p className="truncate text-sm font-semibold text-[#35413b]">
-                            {account.username}
-                          </p>
-                          <VerifiedBadge role={account.role} />
-                        </div>
+                          <div className="flex min-w-0 items-center gap-1.5">
+                            <p className="truncate text-sm font-semibold text-[#35413b]">
+                              {account.username}
+                            </p>
+                            <VerifiedBadge role={account.role} />
+                          </div>
                           <p className="truncate text-sm text-[#7a837e]">
                             {account.email}
                           </p>

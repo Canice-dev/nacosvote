@@ -112,7 +112,7 @@ export function AuditLogManager({
               </button>
             </div>
           ) : (
-            <div className="mt-6 overflow-hidden rounded-2xl border border-[#e6e9e5] bg-white">
+            <div className="mt-6 overflow-hidden rounded-2xl bg-white">
               <div className="flex items-center justify-between border-b border-[#edf0ed] px-5 py-3.5">
                 <h2 className="text-sm font-semibold text-[#47524c]">
                   Activity
@@ -121,7 +121,7 @@ export function AuditLogManager({
                   {events.length} {events.length === 1 ? "event" : "events"}
                 </span>
               </div>
-              <ul className="divide-y divide-[#edf0ed]">
+              <ul>
                 {events.map((event) => (
                   <li key={event.id}>
                     <button

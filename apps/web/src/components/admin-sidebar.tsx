@@ -9,6 +9,7 @@ import {
   ChevronsUpDown,
   CircleQuestionMark,
   ClipboardList,
+  FileSpreadsheet,
   LayoutGrid,
   LogOut,
   Menu,
@@ -39,6 +40,7 @@ const navigation: ReadonlyArray<{
   },
   { label: "Schedule & controls", href: "/admin/schedule", icon: CalendarDays },
   { label: "Results", href: "/admin/results", icon: BarChart3 },
+  { label: "Final reports", href: "/admin/reports", icon: FileSpreadsheet },
   { label: "Audit log", href: "/admin/audit-log", icon: ClipboardList },
   { label: "Admin accounts", href: "/admin/accounts", icon: UserCog },
 ];
@@ -154,7 +156,7 @@ function SidebarContent({
         )}
       </div>
       <nav
-        className={`mt-7 space-y-1 ${collapsed ? "px-1" : ""}`}
+        className={`admin-navigation-scroll mt-7 min-h-0 flex-1 space-y-1 overflow-y-auto overscroll-contain pb-4 ${collapsed ? "px-1" : ""}`}
         aria-label="Admin navigation"
       >
         {navigation.map(({ label, href, icon: NavIcon }) => {
@@ -184,7 +186,7 @@ function SidebarContent({
         })}
       </nav>
       <div
-        className={`mt-auto border-t border-[#e3e4e0] pt-5 ${collapsed ? "px-1" : ""}`}
+        className={`mt-auto shrink-0 pt-4 ${collapsed ? "px-1" : ""}`}
       >
         <a
           href="#"
@@ -326,14 +328,14 @@ export function AdminSidebar(props: AdminSidebarProps) {
         >
           <X className="size-5" aria-hidden="true" />
         </button>
-        <div className="flex min-h-full flex-col lg:hidden">
+        <div className="flex h-full min-h-0 flex-col lg:hidden">
           <SidebarContent
             {...props}
             collapsed={false}
             onNavigate={() => setIsOpen(false)}
           />
         </div>
-        <div className="hidden min-h-full flex-col lg:flex">
+        <div className="hidden h-full min-h-0 flex-col lg:flex">
           <SidebarContent
             {...props}
             collapsed={isCollapsed}

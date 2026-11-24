@@ -1,4 +1,5 @@
 import { and, asc, count, desc, eq, inArray, isNotNull } from "drizzle-orm";
+import { Download } from "lucide-react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
 import {
@@ -172,9 +173,30 @@ export default async function ResultsPage() {
             Final results from submitted anonymous ballots.
           </p>
         </div>
-        <span className="w-fit rounded-full bg-[#e7f4ed] px-3 py-1.5 text-xs font-semibold text-[#177052]">
-          {election.state === "published" ? "Published" : "Election closed"}
-        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          {election.state === "published" ? (
+            <a
+              href={`/api/admin/elections/${election.id}/report`}
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#176356] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#124f45] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#176356] focus-visible:ring-offset-2"
+            >
+              <Download className="size-4" aria-hidden="true" />
+              Download final report
+            </a>
+          ) : (
+            <span className="text-xs text-[#737c77]">
+              Report available after publication
+            </span>
+          )}
+          <a
+            href="/admin/reports"
+            className="text-sm font-semibold text-[#176356] underline-offset-4 hover:underline"
+          >
+            All reports
+          </a>
+          <span className="w-fit rounded-full bg-[#e7f4ed] px-3 py-1.5 text-xs font-semibold text-[#177052]">
+            {election.state === "published" ? "Published" : "Election closed"}
+          </span>
+        </div>
       </div>
       <div className="mt-7 grid gap-4 sm:grid-cols-2">
         <ElectionTurnoutRadial
