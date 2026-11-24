@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useEffect, useRef, useState } from "react";
 
 import { AdminSidebar } from "@/components/admin-sidebar";
@@ -594,19 +595,48 @@ async function uploadPortrait(file: File, positionId: string) {
   formData.append("folder", signatureData.folder);
   formData.append("upload_preset", signatureData.uploadPreset);
   formData.append("signature", signatureData.signature);
-  const uploadResponse = await fetch(
-    `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`,
-    {
-      method: "POST",
-      body: formData,
-    },
-  );
-  const uploadData = (await uploadResponse.json()) as {
-    error?: { message?: string };
-    public_id?: string;
+  const tags = {
+    area: "candidate-portrait",
+    operation: "cloudinary-upload",
   };
+  let uploadResponse: Response;
+  try {
+    uploadResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+      },
+    );
+  } catch (error) {
+    Sentry.captureException(error, { tags });
+    throw new Error("Unable to upload the portrait. Please try again.");
+  }
+
+  let uploadData: { error?: { message?: string }; public_id?: string };
+  try {
+    uploadData = (await uploadResponse.json()) as {
+      error?: { message?: string };
+      public_id?: string;
+    };
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags,
+      extra: { httpStatus: uploadResponse.status },
+    });
+    throw new Error(
+      "Cloudinary returned an unreadable portrait upload response.",
+    );
+  }
 
   if (!uploadResponse.ok || !uploadData.public_id) {
+    Sentry.captureException(
+      new Error("Cloudinary rejected the portrait upload."),
+      {
+        tags,
+        extra: { httpStatus: uploadResponse.status },
+      },
+    );
     throw new Error(
       uploadData.error?.message ?? "Unable to upload the portrait.",
     );

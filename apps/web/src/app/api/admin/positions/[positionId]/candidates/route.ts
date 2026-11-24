@@ -1,4 +1,5 @@
 import { and, eq, max } from "drizzle-orm";
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
@@ -110,6 +111,9 @@ export async function POST(request: Request, { params }: RouteContext) {
       return NextResponse.json({ message: "Unable to assign a candidate order. Please try again." }, { status: 409 });
     }
 
+    Sentry.captureException(error, {
+      tags: { area: "admin-management", operation: "create-candidate" },
+    });
     console.error("Unable to add candidate.", error);
     return NextResponse.json({ message: "Unable to add candidate. Please try again." }, { status: 500 });
   }
