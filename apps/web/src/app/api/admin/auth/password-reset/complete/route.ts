@@ -1,6 +1,7 @@
 import { createHash, randomBytes, scrypt as scryptCallback } from "node:crypto";
 import { promisify } from "node:util";
 
+import * as Sentry from "@sentry/nextjs";
 import { and, eq, gt, isNull, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
@@ -158,6 +159,10 @@ async function sendPasswordChangedNotice(email: string) {
     !fromEmail ||
     (process.env.NODE_ENV === "production" && /@resend\.dev(?:>|$)/i.test(fromEmail))
   ) {
+    Sentry.captureException(
+      new Error("Password reset notification email is not configured."),
+      { tags: { area: "admin-auth", operation: "send-password-change-notice" } },
+    );
     console.error("Password reset notification email is not configured.");
     return;
   }
@@ -170,8 +175,16 @@ async function sendPasswordChangedNotice(email: string) {
       subject: "Your NACOS Vote admin password was changed",
       text: "The password for your NACOS Vote admin account was just changed. If you did not make this change, contact election support immediately.",
     });
-    if (error) console.error("Resend rejected the password change notice.", error.name);
+    if (error) {
+      Sentry.captureException(error, {
+        tags: { area: "admin-auth", operation: "send-password-change-notice" },
+      });
+      console.error("Resend rejected the password change notice.", error.name);
+    }
   } catch (error) {
+    Sentry.captureException(error, {
+      tags: { area: "admin-auth", operation: "send-password-change-notice" },
+    });
     console.error("Unable to send the password change notice.", error);
   }
 }
