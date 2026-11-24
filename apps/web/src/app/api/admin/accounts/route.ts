@@ -1,6 +1,7 @@
 import { randomBytes, scrypt as scryptCallback } from "node:crypto";
 import { promisify } from "node:util";
 
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
@@ -66,6 +67,9 @@ export async function POST(request: Request) {
     if (isUniqueConstraintError(error)) {
       return NextResponse.json({ message: "An administrator with this username or email already exists." }, { status: 409 });
     }
+    Sentry.captureException(error, {
+      tags: { area: "admin-management", operation: "create-admin-account" },
+    });
     console.error("Unable to create admin account.", error);
     return NextResponse.json({ message: "Unable to create the admin account. Please try again." }, { status: 500 });
   }
