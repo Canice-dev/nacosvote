@@ -6,6 +6,7 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 
+import * as Sentry from "@sentry/nextjs";
 import { and, desc, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -192,6 +193,9 @@ export async function POST(request: Request) {
     });
     return response;
   } catch (error) {
+    Sentry.captureException(error, {
+      tags: { area: "student-auth", operation: "verify-otp" },
+    });
     console.error("Unable to verify student authentication.", error);
     return Response.json(
       {

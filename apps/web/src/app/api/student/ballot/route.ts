@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
+import * as Sentry from "@sentry/nextjs";
 import { and, asc, eq, gt, isNull, lte, sql } from "drizzle-orm";
 import { NextRequest } from "next/server";
 
@@ -296,6 +297,9 @@ export async function POST(request: NextRequest) {
 
     return Response.json({ receipt });
   } catch (error) {
+    Sentry.captureException(error, {
+      tags: { area: "voting", operation: "submit-ballot" },
+    });
     console.error("Unable to submit ballot.", error);
     return Response.json(
       {
