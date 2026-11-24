@@ -1,5 +1,6 @@
 import { randomBytes, createHash } from "node:crypto";
 
+import * as Sentry from "@sentry/nextjs";
 import { and, eq, sql } from "drizzle-orm";
 import { Resend } from "resend";
 
@@ -147,10 +148,16 @@ export async function POST(request: Request) {
       );
 
       if (error) {
+        Sentry.captureException(error, {
+          tags: { area: "admin-auth", operation: "send-password-reset-email" },
+        });
         await consumeToken();
         console.error("Resend rejected an admin password reset email.", error.name);
       }
     } catch (error) {
+      Sentry.captureException(error, {
+        tags: { area: "admin-auth", operation: "send-password-reset-email" },
+      });
       await consumeToken();
       console.error(
         "Unable to send an admin password reset email.",
