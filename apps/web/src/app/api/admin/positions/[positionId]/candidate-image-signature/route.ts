@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import * as Sentry from "@sentry/nextjs";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -32,29 +33,45 @@ export async function POST(_request: Request, { params }: RouteContext) {
   const uploadPreset = process.env.CLOUDINARY_CANDIDATE_UPLOAD_PRESET;
 
   if (!cloudName || !apiKey || !apiSecret || !folder || !uploadPreset) {
+    Sentry.captureException(
+      new Error("Candidate portrait upload is not configured."),
+      {
+        tags: { area: "candidate-portrait", operation: "create-upload-signature" },
+      },
+    );
     return NextResponse.json({ message: "Candidate portrait uploads are not configured." }, { status: 503 });
   }
 
-  const { positionId } = await params;
-  const [position] = await db
-    .select({ id: positions.id, electionState: elections.state })
-    .from(positions)
-    .innerJoin(elections, eq(positions.electionId, elections.id))
-    .where(eq(positions.id, positionId))
-    .limit(1);
+  try {
+    const { positionId } = await params;
+    const [position] = await db
+      .select({ id: positions.id, electionState: elections.state })
+      .from(positions)
+      .innerJoin(elections, eq(positions.electionId, elections.id))
+      .where(eq(positions.id, positionId))
+      .limit(1);
 
-  if (!position) {
-    return NextResponse.json({ message: "Position not found." }, { status: 404 });
+    if (!position) {
+      return NextResponse.json({ message: "Position not found." }, { status: 404 });
+    }
+
+    if (position.electionState !== "draft" && position.electionState !== "scheduled") {
+      return NextResponse.json({ message: "Portraits cannot be changed after voting has opened." }, { status: 409 });
+    }
+
+    const timestamp = Math.floor(Date.now() / 1_000);
+    const signature = createHash("sha1")
+      .update(`folder=${folder}&timestamp=${timestamp}&upload_preset=${uploadPreset}${apiSecret}`)
+      .digest("hex");
+
+    return NextResponse.json({ cloudName, apiKey, folder, uploadPreset, timestamp, signature });
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: { area: "candidate-portrait", operation: "create-upload-signature" },
+    });
+    return NextResponse.json(
+      { message: "Unable to prepare the portrait upload. Please try again." },
+      { status: 503 },
+    );
   }
-
-  if (position.electionState !== "draft" && position.electionState !== "scheduled") {
-    return NextResponse.json({ message: "Portraits cannot be changed after voting has opened." }, { status: 409 });
-  }
-
-  const timestamp = Math.floor(Date.now() / 1_000);
-  const signature = createHash("sha1")
-    .update(`folder=${folder}&timestamp=${timestamp}&upload_preset=${uploadPreset}${apiSecret}`)
-    .digest("hex");
-
-  return NextResponse.json({ cloudName, apiKey, folder, uploadPreset, timestamp, signature });
 }
