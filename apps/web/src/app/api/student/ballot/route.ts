@@ -124,6 +124,9 @@ export async function GET(request: NextRequest) {
       positions: [...ballot.values()],
     });
   } catch (error) {
+    Sentry.captureException(error, {
+      tags: { area: "voting", operation: "load-ballot" },
+    });
     console.error("Unable to load student ballot.", error);
     return Response.json(
       { message: VOTING_UNAVAILABLE_MESSAGE },

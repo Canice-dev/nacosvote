@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { NextResponse } from "next/server";
 
 import { db } from "@/db";
@@ -50,6 +51,9 @@ export async function POST(request: Request) {
     if (isOpenElectionConflict(error)) {
       return NextResponse.json({ message: "Close the currently open election before opening another one." }, { status: 409 });
     }
+    Sentry.captureException(error, {
+      tags: { area: "admin-elections", operation: "create-election" },
+    });
     console.error("Unable to create election.", error);
     return NextResponse.json({ message: "Unable to create the election. Please try again." }, { status: 500 });
   }
