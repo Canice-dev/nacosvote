@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -83,6 +84,9 @@ export async function POST(_request: Request, { params }: RouteContext) {
       .limit(1);
     return NextResponse.json({ election });
   } catch (error) {
+    Sentry.captureException(error, {
+      tags: { area: "admin-elections", operation: "publish-results" },
+    });
     console.error("Unable to publish election results.", error);
     return NextResponse.json(
       { message: "Unable to publish election results. Please try again." },
